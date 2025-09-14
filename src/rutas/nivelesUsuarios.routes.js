@@ -1,5 +1,5 @@
 import { Router } from "express";
-import {getEstados, getEstadoById, insertEstado, deleteEstado, updateEstado} from "../controladores/nivelesUsuarios.controladores.js"
+import {getEstados, getEstadoById, insertEstado, deleteEstado, updateEstado} from "../controladores/nivelesUsuarios.js"
 
 const router = Router()
 

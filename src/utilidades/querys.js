@@ -65,7 +65,7 @@ export const updateDato = async (tabla, id, campos) => {
     const pool = await sql.connect(getConnection())
     const campoId = camposId[tabla]
 
-    // Generar SET dinámico y parámetros
+    // Generarando SET dinámico y parámetros
     const keys = Object.keys(campos) 
     const setString = keys.map(k => `${k} = @${k}`).join(", ") 
 
