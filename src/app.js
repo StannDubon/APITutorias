@@ -5,6 +5,9 @@ import usuariosRoutes from './rutas/usuarios.routes.js'
 import tiposCarreraRoutes from './rutas/tiposCarrera.routes.js'
 import horariosRoutes from './rutas/horarios.routes.js'
 import diaSemanaRoutes from './rutas/dia_semana.routes.js'  
+import carrerasRoutes from './rutas/carreras.routes.js'
+import materiasRoutes from './rutas/materias.routes.js'
+import materiaCarreraRoutes from './rutas/materiaCarrera.routes.js'
 import morgan from 'morgan'
 
 const app = express()
@@ -17,6 +20,8 @@ app.use(usuariosRoutes);
 app.use(tiposCarreraRoutes);
 app.use(horariosRoutes);
 app.use(diaSemanaRoutes);
-
+app.use(carrerasRoutes);
+app.use(materiasRoutes);
+app.use(materiaCarreraRoutes);
 
 export default app
