@@ -2,32 +2,34 @@ import sql from 'mssql'
 import { getConnection } from '../db/conexion.js'
 
 const tablasPermitidas = [
-    "tb_niveles_usuario",
-    "tb_usuarios",
-    "tb_tipos_tutoria",
-    "tb_tipos_carrera",
-    "tb_carreras",
-    "tb_materias",
-    "tb_materias_carrera",
-    "tb_horarios",
-    "tb_dias_semana",
-    "tb_horarios_dia_semana",
-    "tb_tutorias",
-    "tb_asistencia"]
+    "tbNivelesUsuario",
+    "tbUsuarios",
+    "tbTiposTutorias",
+    "tbTiposCarreras",
+    "tbCarreras",
+    "tbMaterias",
+    "tbMateriasCarrera",
+    "tbHorarios",
+    "tbDiaSemana",
+    "tbHorarioDiaSemana",
+    "tbTutorias",
+    "tbAsistencia",
+    "tbRefreshTokens"
+]
 
 const camposId = {
-    tb_niveles_usuario: "id_nivel",
-    tb_usuarios: "id_usuario",
-    tb_tipos_tutoria: "id_tipo_tutoria",
-    tb_tipos_carrera: "id_tipo_carrera",
-    tb_carreras: "id_carrera",
-    tb_materias: "id_materia",
-    tb_materias_carrera: "id_materia_carrera",
-    tb_horarios: "id_horario",
-    tb_dias_semana: "id_dia_semana",
-    tb_horarios_dia_semana: "id_horario_dia_semana",
-    tb_tutorias: "id_tutoria",
-    tb_asistencia: "id_asistencia"
+    tbNivelesUsuario: "id_nivel",
+    tbUsuarios: "id_usuario",
+    tbTiposTutorias: "id_tipo_tutoria",
+    tbTiposCarreras: "id_tipo_carrera",
+    tbCarreras: "id_carrera",
+    tbMaterias: "id_materia",
+    tbMateriasCarrera: "id_materia_carrera",
+    tbHorarios: "id_horario",
+    tbDiaSemana: "id_dia_semana",
+    tbHorarioDiaSemana: "id_horario_dia_semana",
+    tbTutorias: "id_tutoria",
+    tbAsistencia: "id_asistencia"
 }
 
 

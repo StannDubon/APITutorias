@@ -175,3 +175,16 @@ CREATE TABLE tbAsistencia(
     CONSTRAINT CHK_dedicacion CHECK (rendimiento_dedicacion BETWEEN 0 AND 100)
 );
 GO  
+
+CREATE TABLE tbRefreshTokens (
+    id_refresh_token INT IDENTITY(1,1) NOT NULL,
+    id_usuario INT NOT NULL,
+    token NVARCHAR(MAX) NOT NULL,
+    fecha_creacion DATETIME DEFAULT GETDATE(),
+    fecha_expiracion DATETIME NOT NULL,
+    revocado BIT DEFAULT 0,
+    
+    CONSTRAINT PK_refresh_token PRIMARY KEY (id_refresh_token),
+    CONSTRAINT FK_refresh_token_usuario FOREIGN KEY (id_usuario) 
+        REFERENCES tbUsuarios(id_usuario)
+);

@@ -143,3 +143,135 @@ if (usuario.intentos_login >= process.env.MAX_LOGIN_ATTEMPTS) {
         });
     }
 }
+
+// controllers/authController.js
+
+const renovarToken = async (req, res) => {
+    try {
+        const { refreshToken } = req.body;
+
+        if (!refreshToken) {
+            return res.status(401).json({
+                error: 'Refresh token no proporcionado'
+            });
+        }
+
+        // 1. Verificar que el refresh token es válido
+        const decoded = verificarRefreshToken(refreshToken);
+
+        if (!decoded) {
+            return res.status(403).json({
+                error: 'Refresh token inválido o expirado'
+            });
+        }
+
+        // 2. Verificar que el token no está revocado (si usas tabla)
+        const pool = await sql.connect();
+        const tokenResult = await pool.request()
+            .input('token', sql.NVarChar, refreshToken)
+            .input('id_usuario', sql.Int, decoded.id)
+            .query(`
+                SELECT * FROM tbRefreshTokens
+                WHERE token = @token 
+                AND id_usuario = @id_usuario
+                AND revocado = 0
+                AND fecha_expiracion > GETDATE()
+            `);
+
+        if (tokenResult.recordset.length === 0) {
+            return res.status(403).json({
+                error: 'Refresh token inválido o revocado'
+            });
+        }
+
+        // 3. Obtener información actualizada del usuario
+        const usuarioResult = await pool.request()
+            .input('id_usuario', sql.Int, decoded.id)
+            .query(`
+                SELECT 
+                    u.id_usuario,
+                    u.carnet,
+                    u.nombre,
+                    u.apellido,
+                    u.estado,
+                    n.nivel
+                FROM tbUsuarios u
+                INNER JOIN tbNivelesUsuarios n ON u.id_nivel = n.id_nivel
+                WHERE u.id_usuario = @id_usuario
+            `);
+
+        if (usuarioResult.recordset.length === 0 || !usuarioResult.recordset[0].estado) {
+            return res.status(403).json({
+                error: 'Usuario no encontrado o inactivo'
+            });
+        }
+
+        const usuario = usuarioResult.recordset[0];
+
+        // 4. Generar nuevo access token
+        const nuevoAccessToken = generarAccessToken(usuario);
+
+        // 5. Opcionalmente, generar nuevo refresh token (rotación)
+        const nuevoRefreshToken = generarRefreshToken(usuario);
+
+        // 6. Revocar el refresh token viejo y guardar el nuevo
+        await pool.request()
+            .input('token_viejo', sql.NVarChar, refreshToken)
+            .query(`
+                UPDATE tbRefreshTokens 
+                SET revocado = 1 
+                WHERE token = @token_viejo
+            `);
+
+        const fechaExpiracion = new Date();
+        fechaExpiracion.setDate(fechaExpiracion.getDate() + 7);
+
+        await pool.request()
+            .input('id_usuario', sql.Int, usuario.id_usuario)
+            .input('token', sql.NVarChar, nuevoRefreshToken)
+            .input('fecha_expiracion', sql.DateTime, fechaExpiracion)
+            .query(`
+                INSERT INTO tbRefreshTokens (id_usuario, token, fecha_expiracion)
+                VALUES (@id_usuario, @token, @fecha_expiracion)
+            `);
+
+        // 7. Responder con los nuevos tokens
+        res.json({
+            accessToken: nuevoAccessToken,
+            refreshToken: nuevoRefreshToken
+        });
+
+    } catch (error) {
+        console.error('Error al renovar token:', error);
+        res.status(500).json({
+            error: 'Error al renovar token'
+        });
+    }
+};
+
+// Logout: Revocar refresh token
+const logout = async (req, res) => {
+    try {
+        const { refreshToken } = req.body;
+
+        if (!refreshToken) {
+            return res.status(400).json({
+                error: 'Refresh token no proporcionado'
+            });
+        }
+
+        const pool = await sql.connect();
+        await pool.request()
+            .input('token', sql.NVarChar, refreshToken)
+            .query(`
+                UPDATE tbRefreshTokens 
+                SET revocado = 1 
+                WHERE token = @token
+            `);
+
+        res.json({ mensaje: 'Logout exitoso' });
+
+    } catch (error) {
+        res.status(500).json({ error: 'Error al cerrar sesión' });
+    }
+};

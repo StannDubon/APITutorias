@@ -1,5 +1,5 @@
 import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato } from "../utilidades/querys.js"
-const tabla = "tb_usuarios";
+const tabla = "tbUsuarios";
 
 export const getUsuarios = async (req, res) => {
     try {
@@ -27,8 +27,10 @@ export const getUsuarioById = async (req, res) => {
 
 export const addUsuario = async (req, res) => {
     try {
-        const {id_nivel, carnet, estado, clave, nombre, apellido, correo} = req.body
-        const result = await insertDato(tabla, {id_nivel, carnet, estado, clave, nombre, apellido, correo})
+        const {id_nivel, carnet, estado, claveHasheada, nombre, apellido, correo} = req.body
+        const result = await insertDato(tabla, {id_nivel, carnet, estado, claveHasheada, nombre, apellido, correo})
+
+
         if (result === 0) {
             return res.status(404).json({ message: "Usuario no encontrado" })
         }
