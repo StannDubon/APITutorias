@@ -1,27 +1,27 @@
 USE master;
 GO
 
-DROP DATABASE IF EXISTS sistema_tutorias_UDB;
+DROP DATABASE IF EXISTS tutoriasUDB;
 GO
 
-CREATE DATABASE sistema_tutorias_UDB;
+CREATE DATABASE tutoriasUDB;
 GO
 
-CREATE LOGIN tutoriaAPI 
-WITH PASSWORD = 'Api_Tutorias',
+CREATE LOGIN adminTutoria 
+WITH PASSWORD = 'apiTutorias',
 CHECK_POLICY = OFF; 
 
-USE sistema_tutorias_UDB;
+USE tutoriasUDB;
 GO
 
-CREATE USER tutoriaAPI FOR LOGIN tutoriaAPI;
+CREATE USER adminTutoria FOR LOGIN adminTutoria;
 
-ALTER ROLE db_datareader ADD MEMBER tutoriaAPI;
-ALTER ROLE db_datawriter ADD MEMBER tutoriaAPI;
+ALTER ROLE db_datareader ADD MEMBER adminTutoria;
+ALTER ROLE db_datawriter ADD MEMBER adminTutoria;
 
 
 -- Tabla Niveles Usuario --
-CREATE TABLE tb_niveles_usuario (
+CREATE TABLE tbNivelesUsuarios (
     id_nivel INT IDENTITY (1,1) NOT NULL,
     nivel NVARCHAR(50) NOT NULL
 
@@ -31,7 +31,7 @@ CREATE TABLE tb_niveles_usuario (
 GO
 
 -- Tabla de Usuarios --
-CREATE TABLE tb_usuarios (
+CREATE TABLE tbUsuarios (
     id_usuario INT IDENTITY (1,1) NOT NULL,
     id_nivel INT NOT NULL,
     carnet NVARCHAR(15) NOT NULL,
@@ -41,9 +41,10 @@ CREATE TABLE tb_usuarios (
     apellido NVARCHAR(50) NOT NULL,
     correo NVARCHAR(75) NOT NULL,
     intentos_login TINYINT DEFAULT 0 NOT NULL,
+    fecha_bloqueo DATETIME,
 
     CONSTRAINT PK_usuario PRIMARY KEY(id_usuario),
-    CONSTRAINT FK_niveles_usuario FOREIGN KEY (id_nivel) REFERENCES tb_niveles_usuario(id_nivel),
+    CONSTRAINT FK_niveles_usuario FOREIGN KEY (id_nivel) REFERENCES tbNivelesUsuarios(id_nivel),
     CONSTRAINT UQ_carnet UNIQUE (carnet),
     CONSTRAINT UQ_correo UNIQUE (correo),
     CONSTRAINT CHK_correo_valido CHECK (correo LIKE '%_@__%.__%')
@@ -51,7 +52,7 @@ CREATE TABLE tb_usuarios (
 GO
 
 -- Tabla de Tipos de Tutorías --
-CREATE TABLE tb_tipos_tutoria (
+CREATE TABLE tbTiposTutoria (
     id_tipo_tutoria INT IDENTITY (1,1) NOT NULL,
     tipo_tutoria NVARCHAR(25) NOT NULL, -- Ciencias Básicas e Ingenierías
     
@@ -61,7 +62,7 @@ CREATE TABLE tb_tipos_tutoria (
 GO
 
 -- Tabla de Tipo Carrera -- 
-CREATE TABLE tb_tipos_carrera (
+CREATE TABLE tbTiposCarrera (
     id_tipo_carrera INT IDENTITY (1,1) NOT NULL,
     tipo_carrera NVARCHAR(30) NOT NULL,
     
@@ -71,19 +72,19 @@ CREATE TABLE tb_tipos_carrera (
 GO
 
 -- Tabla de Carreras --
-CREATE TABLE tb_carreras (
+CREATE TABLE tbCarreras (
     id_carrera INT IDENTITY (1,1) NOT NULL,
     id_tipo_carrera INT NOT NULL,
     nombre_carrera NVARCHAR(25) NOT NULL,
     
     CONSTRAINT PK_carrera PRIMARY KEY (id_carrera),
     CONSTRAINT UQ_nombre_carrera UNIQUE (nombre_carrera),
-    CONSTRAINT FK_tipo_carrera FOREIGN KEY (id_tipo_carrera) REFERENCES tb_tipos_carrera(id_tipo_carrera)
+    CONSTRAINT FK_tipo_carrera FOREIGN KEY (id_tipo_carrera) REFERENCES tbTiposCarrera(id_tipo_carrera)
 );
 GO
 
 -- Tabla de Materias --
-CREATE TABLE tb_materias (
+CREATE TABLE tbMaterias (
     id_materia INT IDENTITY (1,1) NOT NULL,
     nombre_materia NVARCHAR(30) NOT NULL,
     
@@ -92,20 +93,20 @@ CREATE TABLE tb_materias (
 GO
 
 -- Tabla de Materias por Carrera --
-CREATE TABLE tb_materias_carrera (
+CREATE TABLE tbMateriasCarrera (
     id_materia_carrera INT IDENTITY (1,1) NOT NULL,
     id_materia INT NOT NULL,
     id_carrera INT NOT NULL,
     
     CONSTRAINT PK_materia_carrera PRIMARY KEY(id_materia_carrera),
-    CONSTRAINT FK_materia_carrera_materia FOREIGN KEY (id_materia) REFERENCES tb_materias(id_materia),
-    CONSTRAINT FK_materia_carrera_carrera FOREIGN KEY (id_carrera) REFERENCES tb_carreras(id_carrera),
+    CONSTRAINT FK_materia_carrera_materia FOREIGN KEY (id_materia) REFERENCES tbMaterias(id_materia),
+    CONSTRAINT FK_materia_carrera_carrera FOREIGN KEY (id_carrera) REFERENCES tbCarreras(id_carrera),
     CONSTRAINT UQ_materia_carrera UNIQUE (id_materia, id_carrera)
 );
 GO
 
 -- Tabla de Horarios --
-CREATE TABLE tb_horarios (
+CREATE TABLE tbHorarios (
     id_horario INT IDENTITY (1,1) NOT NULL,
     hora_inicio TIME NOT NULL,
     hora_final TIME NOT NULL,
@@ -116,7 +117,7 @@ CREATE TABLE tb_horarios (
 GO
 
 -- Tabla de Horarios --
-CREATE TABLE tb_dias_semana (
+CREATE TABLE tbDiaSemanas (
     id_dia_semana INT IDENTITY (1,1) NOT NULL,
     dia_semana VARCHAR(10) NOT NULL,
     
@@ -126,7 +127,7 @@ CREATE TABLE tb_dias_semana (
 GO
 
 -- Tabla de Horarios por Día de Semana --
-CREATE TABLE tb_horarios_dia_semana (
+CREATE TABLE tbHorarioDiaSemana (
     id_horario_dia_semana INT IDENTITY (1,1) NOT NULL,
     id_horario INT NOT NULL,
     id_dia INT NOT NULL,
@@ -135,13 +136,13 @@ CREATE TABLE tb_horarios_dia_semana (
     fecha_fin_validez DATETIME,
     
     CONSTRAINT PK_horario_dia_semana PRIMARY KEY (id_horario_dia_semana),
-    CONSTRAINT FK_horario_dia_semana_horario FOREIGN KEY (id_horario) REFERENCES tb_horarios(id_horario),
-    CONSTRAINT FK_horario_dia_semana_dia FOREIGN KEY (id_dia) REFERENCES tb_dias_semana(id_dia_semana)
+    CONSTRAINT FK_horario_dia_semana_horario FOREIGN KEY (id_horario) REFERENCES tbHorarios(id_horario),
+    CONSTRAINT FK_horario_dia_semana_dia FOREIGN KEY (id_dia) REFERENCES tbDiaSemanas(id_dia_semana)
 );
 GO
 
 -- Tabla de Tutorías --
-CREATE TABLE tb_tutorias (
+CREATE TABLE tbTutorias (
     id_tutoria INT IDENTITY (1,1) NOT NULL,
     id_materia_carrera INT NOT NULL,
     id_tutor INT NOT NULL,
@@ -151,15 +152,15 @@ CREATE TABLE tb_tutorias (
     aula_tutoria NVARCHAR(10) NOT NULL,
     
     CONSTRAINT PK_tutoria PRIMARY KEY (id_tutoria),
-    CONSTRAINT FK_tutoria_usuario FOREIGN KEY (id_tutor) REFERENCES tb_usuarios(id_usuario),
-    CONSTRAINT FK_tutoria_tipo_tutoria FOREIGN KEY (id_tipo_tutoria) REFERENCES tb_tipos_tutoria(id_tipo_tutoria),
-    CONSTRAINT FK_tutoria_materiaCarrera FOREIGN KEY (id_materia_carrera) REFERENCES tb_materias_carrera(id_materia_carrera),
-    CONSTRAINT FK_tutoria_horario_dia_semana FOREIGN KEY (id_horario_dia_semana) REFERENCES tb_horarios_dia_semana(id_horario_dia_semana)
+    CONSTRAINT FK_tutoria_usuario FOREIGN KEY (id_tutor) REFERENCES tbUsuarios(id_usuario),
+    CONSTRAINT FK_tutoria_tipo_tutoria FOREIGN KEY (id_tipo_tutoria) REFERENCES tbTiposTutoria(id_tipo_tutoria),
+    CONSTRAINT FK_tutoria_materiaCarrera FOREIGN KEY (id_materia_carrera) REFERENCES tbMateriasCarrera(id_materia_carrera),
+    CONSTRAINT FK_tutoria_horario_dia_semana FOREIGN KEY (id_horario_dia_semana) REFERENCES tbHorarioDiaSemana(id_horario_dia_semana)
 );
 GO
 
 -- Tabla de Asistencia --
-CREATE TABLE tb_asistencia(
+CREATE TABLE tbAsistencia(
     id_asistencia INT IDENTITY (1,1) NOT NULL,
     id_usuario INT NOT NULL,
     id_tutoria INT NOT NULL,
@@ -168,9 +169,9 @@ CREATE TABLE tb_asistencia(
     fecha_asistencia DATETIME NOT NULL,
     
     CONSTRAINT PK_asistencia PRIMARY KEY (id_asistencia),
-    CONSTRAINT FK_asistencia_usuario FOREIGN KEY (id_usuario) REFERENCES tb_usuarios(id_usuario),
-    CONSTRAINT FK_asistencia_tutoria FOREIGN KEY (id_tutoria) REFERENCES tb_tutorias(id_tutoria),
+    CONSTRAINT FK_asistencia_usuario FOREIGN KEY (id_usuario) REFERENCES tbUsuarios(id_usuario),
+    CONSTRAINT FK_asistencia_tutoria FOREIGN KEY (id_tutoria) REFERENCES tbTutorias(id_tutoria),
     CONSTRAINT CHK_Aprendizaje CHECK (rendimiento_aprendizaje BETWEEN 0 AND 100),
     CONSTRAINT CHK_dedicacion CHECK (rendimiento_dedicacion BETWEEN 0 AND 100)
 );
-GO
+GO  
