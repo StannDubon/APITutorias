@@ -1,5 +1,5 @@
 import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato } from "../utilidades/querys.js"
-const tabla = "tb_materias";
+const tabla = "tbMaterias";
 
 export const getMaterias = async (req, res) => {
     try {

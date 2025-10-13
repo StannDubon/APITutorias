@@ -1,5 +1,5 @@
 import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato } from "../utilidades/querys.js"
-const tabla = "tb_niveles_usuario";
+const tabla = "tbNivelesUsuarios";
 
 
 export const getEstados = async (req, res) => {

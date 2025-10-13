@@ -1,5 +1,5 @@
 import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato } from "../utilidades/querys.js"
-const tabla = "tb_tipos_tutoria";
+const tabla = "tbTiposTutoria";
 
 
 export const getTiposTutoria = async (req, res) => {

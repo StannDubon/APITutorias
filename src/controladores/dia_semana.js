@@ -1,5 +1,5 @@
 import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato } from "../utilidades/querys.js"
-const tabla = "tb_dias_semana";
+const tabla = "tbDiaSemanas";
 
 //Obtener
 export const get_dia_semana = async (req, res) => {

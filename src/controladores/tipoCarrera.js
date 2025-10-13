@@ -1,5 +1,5 @@
 import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato } from "../utilidades/querys.js"
-const tabla = "tb_tipos_carrera";
+const tabla = "tbTiposCarrera";
 
 export const getTipoCarreras = async (req, res) => {
     try {
