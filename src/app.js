@@ -8,8 +8,12 @@ import diaSemanaRoutes from './rutas/dia_semana.routes.js'
 import carrerasRoutes from './rutas/carreras.routes.js'
 import materiasRoutes from './rutas/materias.routes.js'
 import materiaCarreraRoutes from './rutas/materiaCarrera.routes.js'
+import tutoriasRoutes from './rutas/tutorias.routes.js'
 import authRoutes from './rutas/auth.routes.js'
+import asistenciaRoutes from './rutas/asistencia.routes.js'
+import horarioDiaSemanaRoutes from './rutas/horarioDiaSemana.routes.js'
 import morgan from 'morgan'
+import { notFound, errorHandler } from './middlewares/errorHandler.js'
 
 const app = express()
 
@@ -26,6 +30,12 @@ app.use(diaSemanaRoutes);
 app.use(carrerasRoutes);
 app.use(materiasRoutes);
 app.use(materiaCarreraRoutes);
+app.use(tutoriasRoutes);
+app.use(asistenciaRoutes);
+app.use(horarioDiaSemanaRoutes);
 app.use(authRoutes);
+
+app.use(notFound);      
+app.use(errorHandler);
 
 export default app

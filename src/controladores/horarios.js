@@ -1,5 +1,5 @@
 import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato } from "../utilidades/querys.js"
-const tabla = "tb_horarios";
+const tabla = "tbHorarios";
 
 // Controladores para manejar los horarios 
 

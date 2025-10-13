@@ -1,7 +1,8 @@
+import { catchAsync } from "../middlewares/errorHandler.js";
 import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato } from "../utilidades/querys.js"
 const tabla = "tbUsuarios";
 
-export const getUsuarios = async (req, res) => {
+export const getUsuarios = catchAsync(async (req, res) => {
     try {
         const result = await todosDatos(tabla);
         res.json(result)
@@ -9,9 +10,9 @@ export const getUsuarios = async (req, res) => {
         console.log(error)
         res.status(500).json({ message: "Error al obtener los usuarios" })
     }
-}
+})
 
-export const getUsuarioById = async (req, res) => {
+export const getUsuarioById = catchAsync(async (req, res) => {
     try {
         const {id} = req.params
         const result = await unSoloDato(tabla, id)
@@ -23,9 +24,9 @@ export const getUsuarioById = async (req, res) => {
         console.log(error)
         res.status(500).json({ message: "Error al obtener el usuario" })
     }
-}
+})
 
-export const addUsuario = async (req, res) => {
+export const addUsuario = catchAsync(async (req, res) => {
     try {
         const {id_nivel, carnet, estado, claveHasheada, nombre, apellido, correo} = req.body
         const result = await insertDato(tabla, {id_nivel, carnet, estado, claveHasheada, nombre, apellido, correo})
@@ -39,9 +40,9 @@ export const addUsuario = async (req, res) => {
         console.log(error)
         res.status(500).json({ message: "Error al insertar el usuario" })
     }
-}
+})
 
-export const updateUsuario = async (req,res) => {
+export const updateUsuario = catchAsync(async (req,res) => {
     try {
         const {id} = req.params
         const result = await updateDato(tabla, id, req.body)
@@ -53,9 +54,9 @@ export const updateUsuario = async (req,res) => {
         console.log(error)
         res.status(500).json({ message: "Error al actualizar el usuario" })
     }
-}
+})
 
-export const deleteUsuario = async (req, res) => {
+export const deleteUsuario = catchAsync(async (req, res) => {
     try {
         const {id} = req.params 
         const result = await deleteDato(tabla,id) 
@@ -67,9 +68,9 @@ export const deleteUsuario = async (req, res) => {
         console.log(error)
         res.status(500).json({ message: "Error al eliminar el usuario" })
     }
-}
+})
 
-export const desbloquearUsuario = async (req, res) => {
+export const desbloquearUsuario = catchAsync(async (req, res) => {
     try {
         const {id} = req.params 
         const result = await updateDato(tabla,id, {estado: 1}) 
@@ -81,4 +82,4 @@ export const desbloquearUsuario = async (req, res) => {
         console.log(error)
         res.status(500).json({ message: "Error al desbloquear el usuario" })
     }
-}
+})

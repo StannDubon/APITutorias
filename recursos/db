@@ -127,7 +127,7 @@ CREATE TABLE tbDiaSemanas (
 GO
 
 -- Tabla de Horarios por Día de Semana --
-CREATE TABLE tbHorarioDiaSemana (
+CREATE TABLE tbHorarioDiaSemanas (
     id_horario_dia_semana INT IDENTITY (1,1) NOT NULL,
     id_horario INT NOT NULL,
     id_dia INT NOT NULL,
@@ -160,7 +160,7 @@ CREATE TABLE tbTutorias (
 GO
 
 -- Tabla de Asistencia --
-CREATE TABLE tbAsistencia(
+CREATE TABLE tbAsistencias(
     id_asistencia INT IDENTITY (1,1) NOT NULL,
     id_usuario INT NOT NULL,
     id_tutoria INT NOT NULL,
@@ -188,3 +188,37 @@ CREATE TABLE tbRefreshTokens (
     CONSTRAINT FK_refresh_token_usuario FOREIGN KEY (id_usuario) 
         REFERENCES tbUsuarios(id_usuario)
 );
+
+
+CREATE PROCEDURE sp_LimpiarTokensExpirados
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    -- Marcar como inactivos los tokens expirados
+    UPDATE tbRefreshTokens
+    SET activo = 0,
+        fecha_revocacion = GETDATE()
+    WHERE fecha_expiracion < GETDATE()
+    AND activo = 1;
+    
+    -- Opcional: Eliminar tokens muy antiguos (más de 30 días)
+    DELETE FROM tbRefreshTokens
+    WHERE fecha_expiracion < DATEADD(DAY, -30, GETDATE());
+    
+    SELECT @@ROWCOUNT AS TokensEliminados;
+END;
+GO
+
+CREATE VIEW vw_SesionesActivas AS
+SELECT 
+    u.id_usuario,
+    u.carnet,
+    u.nombre,
+    u.apellido,
+    COUNT(rt.id_refresh_token) AS sesiones_activas,
+    MAX(rt.fecha_creacion) AS ultimo_login
+FROM tbUsuarios u
+LEFT JOIN tbRefreshTokens rt ON u.id_usuario = rt.id_usuario AND rt.activo = 1
+GROUP BY u.id_usuario, u.carnet, u.nombre, u.apellido;
+GO
