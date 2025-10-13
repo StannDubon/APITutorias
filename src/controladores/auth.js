@@ -1,22 +1,63 @@
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const sql = require('mssql');
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import { getConnection } from '../db/conexion.js';
+import sql from 'mssql';
+import { JWT_SECRET, JWT_REFRESH_SECRET, JWT_EXPIRES_IN, JWT_REFRESH_EXPIRES_IN, MAX_LOGIN_ATTEMPTS } from '../../config.js';
 
-const login = async (req, res) => {
+const generarAccessToken = (usuario) => {
+    const payload = {
+        id: usuario.id_usuario,
+        carnet: usuario.carnet,
+        nivel: usuario.nivel,
+        tipo: 'access' // Identificador para diferenciar de refresh token
+    };
+    
+    return jwt.sign(payload, JWT_SECRET, { 
+        expiresIn: JWT_EXPIRES_IN // "15m" = 15 minutos
+    });
+};
+
+
+const generarRefreshToken = (usuario) => {
+    const payload = {
+        id: usuario.id_usuario,
+        carnet: usuario.carnet,
+        tipo: 'refresh' // Identificador para diferenciar de access token
+    };
+    
+    return jwt.sign(payload, JWT_REFRESH_SECRET, { 
+        expiresIn: JWT_REFRESH_EXPIRES_IN // "7d" = 7 días
+    });
+};
+
+export const login = async (req, res) => {
     try {
         const { carnet, clave } = req.body;
 
+        // PASO 1: Validar que vengan los datos requeridos
         if (!carnet || !clave) {
             return res.status(400).json({
                 error: 'Carnet y contraseña son requeridos'
             });
         }
 
-        const pool = await sql.connect();
+        // Buscar usuario por carnet usando SQL directo
+        const pool = await getConnection();
         const result = await pool.request()
             .input('carnet', sql.NVarChar, carnet)
             .query(`
-                SELECT u.id_usuario, u.carnet, u.clave, u.nombre, u.apellido, u.correo, u.estado,u.intentos_login,u.id_nivel,n.nivel
+                SELECT 
+                    u.id_usuario, 
+                    u.carnet, 
+                    u.clave, 
+                    u.nombre, 
+                    u.apellido, 
+                    u.correo, 
+                    u.estado,
+                    u.intentos_login,
+                    u.fecha_bloqueo,
+                    u.id_nivel,
+                    n.nivel
                 FROM tbUsuarios u
                 INNER JOIN tbNivelesUsuarios n ON u.id_nivel = n.id_nivel
                 WHERE u.carnet = @carnet
@@ -30,32 +71,61 @@ const login = async (req, res) => {
 
         const usuario = result.recordset[0];
 
+        // Verificar si está bloqueado PERMANENTEMENTE
+        // (estado = 0 significa bloqueado por administrador)
         if (!usuario.estado) {
             return res.status(403).json({
-                error: 'Usuario bloqueado. Contacta al administrador'
+                error: 'Usuario bloqueado permanentemente. Contacta al administrador'
             });
         }
 
-        if (usuario.intentos_login >= process.env.MAX_LOGIN_ATTEMPTS) {
-            // Bloquear la cuenta
-            await pool.request()
-                .input('id_usuario', sql.Int, usuario.id_usuario)
-                .query(`
-                    UPDATE tbUsuarios 
-                    SET estado = 0 
-                    WHERE id_usuario = @id_usuario
-                `);
-
-            return res.status(403).json({
-                error: 'Cuenta bloqueada por múltiples intentos fallidos. Contacta al administrador'
-            });
+        // PASO 4: Verificar BLOQUEO TEMPORAL por intentos fallidos
+        const TIEMPO_BLOQUEO_MINUTOS = 30;
+        
+        if (usuario.intentos_login >= MAX_LOGIN_ATTEMPTS) {
+            if (usuario.fecha_bloqueo) {
+                // Calcular cuánto tiempo ha pasado desde el bloqueo
+                const tiempoTranscurrido = (new Date() - new Date(usuario.fecha_bloqueo)) / (1000 * 60);
+                
+                if (tiempoTranscurrido < TIEMPO_BLOQUEO_MINUTOS) {
+                    // Aún está bloqueado
+                    const minutosRestantes = Math.ceil(TIEMPO_BLOQUEO_MINUTOS - tiempoTranscurrido);
+                    return res.status(403).json({
+                        error: `Cuenta bloqueada temporalmente. Intenta en ${minutosRestantes} minutos`
+                    });
+                } else {
+                    // Ya pasó el tiempo, resetear intentos
+                    await pool.request()
+                        .input('id_usuario', sql.Int, usuario.id_usuario)
+                        .query(`
+                            UPDATE tbUsuarios 
+                            SET intentos_login = 0, fecha_bloqueo = NULL 
+                            WHERE id_usuario = @id_usuario
+                        `);
+                    usuario.intentos_login = 0;
+                }
+            } else {
+                // Primera vez que alcanza el máximo, establecer fecha
+                await pool.request()
+                    .input('id_usuario', sql.Int, usuario.id_usuario)
+                    .query(`
+                        UPDATE tbUsuarios 
+                        SET fecha_bloqueo = GETDATE() 
+                        WHERE id_usuario = @id_usuario
+                    `);
+                
+                return res.status(403).json({
+                    error: `Cuenta bloqueada por ${TIEMPO_BLOQUEO_MINUTOS} minutos debido a múltiples intentos fallidos`
+                });
+            }
         }
 
-        // 6. Verificar la contraseña
+        // Verificar la contraseña con bcrypt
+        // bcrypt.compare compara la contraseña en texto plano con el hash
         const passwordValida = await bcrypt.compare(clave, usuario.clave);
 
         if (!passwordValida) {
-            // Incrementar intentos fallidos
+            // CONTRASEÑA INCORRECTA: Incrementar intentos
             await pool.request()
                 .input('id_usuario', sql.Int, usuario.id_usuario)
                 .query(`
@@ -64,25 +134,42 @@ const login = async (req, res) => {
                     WHERE id_usuario = @id_usuario
                 `);
 
-            const intentosRestantes = process.env.MAX_LOGIN_ATTEMPTS - (usuario.intentos_login + 1);
+            const intentosRestantes = MAX_LOGIN_ATTEMPTS - (usuario.intentos_login + 1);
 
             return res.status(401).json({
                 error: 'Credenciales inválidas',
-                intentosRestantes: intentosRestantes
+                intentosRestantes: Math.max(0, intentosRestantes)
             });
         }
 
+        // login exitoso Resetear intentos fallidos
         await pool.request()
             .input('id_usuario', sql.Int, usuario.id_usuario)
             .query(`
                 UPDATE tbUsuarios 
-                SET intentos_login = 0 
+                SET intentos_login = 0, fecha_bloqueo = NULL 
                 WHERE id_usuario = @id_usuario
             `);
 
+        // Generar los dos tokens
         const accessToken = generarAccessToken(usuario);
         const refreshToken = generarRefreshToken(usuario);
 
+        // Guardar el refresh token en la base de datos
+        const fechaExpiracion = new Date();
+        fechaExpiracion.setDate(fechaExpiracion.getDate() + 7); // +7 días
+
+        await pool.request()
+            .input('id_usuario', sql.Int, usuario.id_usuario)
+            .input('token', sql.NVarChar(sql.MAX), refreshToken)
+            .input('fecha_expiracion', sql.DateTime, fechaExpiracion)
+            .input('activo', sql.Bit, 1)
+            .query(`
+                INSERT INTO tbRefreshTokens (id_usuario, token, fecha_expiracion, activo, fecha_creacion)
+                VALUES (@id_usuario, @token, @fecha_expiracion, @activo, GETDATE())
+            `);
+
+        // Retornar respuesta exitosa
         res.json({
             mensaje: 'Login exitoso',
             usuario: {
@@ -98,101 +185,90 @@ const login = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error en login:', error);
-        res.status(500).json({
-            error: 'Error en el servidor'
+        console.log(error);
+        res.status(500).json({ 
+            message: "Error al iniciar sesión",
+            detalle: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 };
 
-//Bloqueo de usuario
-
-const TIEMPO_BLOQUEO_MINUTOS = 30;
-
-if (usuario.intentos_login >= process.env.MAX_LOGIN_ATTEMPTS) {
-    if (usuario.fecha_bloqueo) {
-        const tiempoTranscurrido = (new Date() - new Date(usuario.fecha_bloqueo)) / (1000 * 60);
-        
-        if (tiempoTranscurrido < TIEMPO_BLOQUEO_MINUTOS) {
-            const minutosRestantes = Math.ceil(TIEMPO_BLOQUEO_MINUTOS - tiempoTranscurrido);
-            return res.status(403).json({
-                error: `Cuenta bloqueada temporalmente. Intenta en ${minutosRestantes} minutos`
-            });
-        } else {
-            // Resetear intentos después del tiempo de bloqueo
-            await pool.request()
-                .input('id_usuario', sql.Int, usuario.id_usuario)
-                .query(`
-                    UPDATE tbUsuarios 
-                    SET intentos_login = 0, fecha_bloqueo = NULL 
-                    WHERE id_usuario = @id_usuario
-                `);
-        }
-    } else {
-        // Primera vez que se bloquea, guardar fecha
-        await pool.request()
-            .input('id_usuario', sql.Int, usuario.id_usuario)
-            .query(`
-                UPDATE tbUsuarios 
-                SET fecha_bloqueo = GETDATE() 
-                WHERE id_usuario = @id_usuario
-            `);
-        
-        return res.status(403).json({
-            error: `Cuenta bloqueada por ${TIEMPO_BLOQUEO_MINUTOS} minutos`
-        });
-    }
-}
-
-// controllers/authController.js
-
-const renovarToken = async (req, res) => {
+export const renovarToken = async (req, res) => {
     try {
         const { refreshToken } = req.body;
 
+        // Validar que venga el refresh token
         if (!refreshToken) {
-            return res.status(401).json({
-                error: 'Refresh token no proporcionado'
+            return res.status(400).json({
+                error: 'Refresh token es requerido'
             });
         }
 
-        // 1. Verificar que el refresh token es válido
-        const decoded = verificarRefreshToken(refreshToken);
-
-        if (!decoded) {
-            return res.status(403).json({
+        // Verificar el token con JWT
+        let decoded;
+        try {
+            decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
+        } catch (error) {
+            return res.status(401).json({
                 error: 'Refresh token inválido o expirado'
             });
         }
 
-        // 2. Verificar que el token no está revocado (si usas tabla)
-        const pool = await sql.connect();
-        const tokenResult = await pool.request()
-            .input('token', sql.NVarChar, refreshToken)
-            .input('id_usuario', sql.Int, decoded.id)
-            .query(`
-                SELECT * FROM tbRefreshTokens
-                WHERE token = @token 
-                AND id_usuario = @id_usuario
-                AND revocado = 0
-                AND fecha_expiracion > GETDATE()
-            `);
-
-        if (tokenResult.recordset.length === 0) {
-            return res.status(403).json({
-                error: 'Refresh token inválido o revocado'
+        // Verificar que sea un refresh token (no un access token)
+        if (decoded.tipo !== 'refresh') {
+            return res.status(401).json({
+                error: 'El token proporcionado no es un refresh token'
             });
         }
 
-        // 3. Obtener información actualizada del usuario
-        const usuarioResult = await pool.request()
+        // Verificar que el token exista en la BD y esté activo
+        const pool = await getConnection();
+        const tokenResult = await pool.request()
+            .input('token', sql.NVarChar(sql.MAX), refreshToken)
+            .input('id_usuario', sql.Int, decoded.id)
+            .query(`
+                SELECT 
+                    id_refresh_token,
+                    id_usuario,
+                    fecha_expiracion,
+                    activo
+                FROM tbRefreshTokens
+                WHERE token = @token 
+                    AND id_usuario = @id_usuario
+                    AND activo = 1
+            `);
+
+        if (tokenResult.recordset.length === 0) {
+            return res.status(401).json({
+                error: 'Refresh token no válido o ha sido revocado'
+            });
+        }
+
+        const tokenData = tokenResult.recordset[0];
+
+        // Verificar que no haya expirado
+        if (new Date() > new Date(tokenData.fecha_expiracion)) {
+            // Desactivar el token expirado
+            await pool.request()
+                .input('id_refresh_token', sql.Int, tokenData.id_refresh_token)
+                .query(`
+                    UPDATE tbRefreshTokens 
+                    SET activo = 0 
+                    WHERE id_refresh_token = @id_refresh_token
+                `);
+
+            return res.status(401).json({
+                error: 'Refresh token expirado. Inicia sesión nuevamente'
+            });
+        }
+
+        // Obtener datos actuales del usuario
+        const userResult = await pool.request()
             .input('id_usuario', sql.Int, decoded.id)
             .query(`
                 SELECT 
                     u.id_usuario,
                     u.carnet,
-                    u.nombre,
-                    u.apellido,
                     u.estado,
                     n.nivel
                 FROM tbUsuarios u
@@ -200,78 +276,106 @@ const renovarToken = async (req, res) => {
                 WHERE u.id_usuario = @id_usuario
             `);
 
-        if (usuarioResult.recordset.length === 0 || !usuarioResult.recordset[0].estado) {
-            return res.status(403).json({
-                error: 'Usuario no encontrado o inactivo'
+        if (userResult.recordset.length === 0) {
+            return res.status(404).json({
+                error: 'Usuario no encontrado'
             });
         }
 
-        const usuario = usuarioResult.recordset[0];
+        const usuario = userResult.recordset[0];
 
-        // 4. Generar nuevo access token
+        // Verificar que el usuario siga activo
+        if (!usuario.estado) {
+            // Revocar el refresh token
+            await pool.request()
+                .input('id_refresh_token', sql.Int, tokenData.id_refresh_token)
+                .query(`
+                    UPDATE tbRefreshTokens 
+                    SET activo = 0 
+                    WHERE id_refresh_token = @id_refresh_token
+                `);
+
+            return res.status(403).json({
+                error: 'Usuario bloqueado'
+            });
+        }
+
+        // Generar NUEVO access token
         const nuevoAccessToken = generarAccessToken(usuario);
 
-        // 5. Opcionalmente, generar nuevo refresh token (rotación)
-        const nuevoRefreshToken = generarRefreshToken(usuario);
-
-        // 6. Revocar el refresh token viejo y guardar el nuevo
-        await pool.request()
-            .input('token_viejo', sql.NVarChar, refreshToken)
-            .query(`
-                UPDATE tbRefreshTokens 
-                SET revocado = 1 
-                WHERE token = @token_viejo
-            `);
-
-        const fechaExpiracion = new Date();
-        fechaExpiracion.setDate(fechaExpiracion.getDate() + 7);
-
-        await pool.request()
-            .input('id_usuario', sql.Int, usuario.id_usuario)
-            .input('token', sql.NVarChar, nuevoRefreshToken)
-            .input('fecha_expiracion', sql.DateTime, fechaExpiracion)
-            .query(`
-                INSERT INTO tbRefreshTokens (id_usuario, token, fecha_expiracion)
-                VALUES (@id_usuario, @token, @fecha_expiracion)
-            `);
-
-        // 7. Responder con los nuevos tokens
+        // Retornar el nuevo access token
         res.json({
-            accessToken: nuevoAccessToken,
-            refreshToken: nuevoRefreshToken
+            mensaje: 'Token renovado exitosamente',
+            accessToken: nuevoAccessToken
         });
 
     } catch (error) {
-        console.error('Error al renovar token:', error);
-        res.status(500).json({
-            error: 'Error al renovar token'
+        console.log(error);
+        res.status(500).json({ 
+            message: "Error al renovar token"
         });
     }
 };
 
-// Logout: Revocar refresh token
-const logout = async (req, res) => {
+export const logout = async (req, res) => {
     try {
         const { refreshToken } = req.body;
 
         if (!refreshToken) {
             return res.status(400).json({
-                error: 'Refresh token no proporcionado'
+                error: 'Refresh token es requerido'
             });
         }
 
-        const pool = await sql.connect();
-        await pool.request()
-            .input('token', sql.NVarChar, refreshToken)
+        const pool = await getConnection();
+        const result = await pool.request()
+            .input('token', sql.NVarChar(sql.MAX), refreshToken)
             .query(`
                 UPDATE tbRefreshTokens 
-                SET revocado = 1 
-                WHERE token = @token
+                SET activo = 0, fecha_revocacion = GETDATE()
+                WHERE token = @token AND activo = 1
             `);
 
-        res.json({ mensaje: 'Logout exitoso' });
+        if (result.rowsAffected[0] === 0) {
+            return res.status(404).json({
+                error: 'Refresh token no encontrado o ya fue revocado'
+            });
+        }
+
+        res.json({
+            mensaje: 'Sesión cerrada exitosamente'
+        });
 
     } catch (error) {
-        res.status(500).json({ error: 'Error al cerrar sesión' });
+        console.log(error);
+        res.status(500).json({ 
+            message: "Error al cerrar sesión"
+        });
+    }
+};
+
+export const logoutTodos = async (req, res) => {
+    try {
+        // req.usuario viene del middleware verificarToken
+        const idUsuario = req.usuario.id;
+
+        const pool = await getConnection();
+        await pool.request()
+            .input('id_usuario', sql.Int, idUsuario)
+            .query(`
+                UPDATE tbRefreshTokens 
+                SET activo = 0, fecha_revocacion = GETDATE()
+                WHERE id_usuario = @id_usuario AND activo = 1
+            `);
+
+        res.json({
+            mensaje: 'Todas las sesiones han sido cerradas'
+        });
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ 
+            message: "Error al cerrar todas las sesiones"
+        });
     }
 };

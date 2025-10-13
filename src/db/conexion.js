@@ -1,5 +1,5 @@
 import sql from 'mssql'
-import {DB_HOST, DB_USER, DB_PASSWORD, DB_NAME} from '../config.js'
+import {DB_HOST, DB_USER, DB_PASSWORD, DB_NAME} from '../../config.js'
 
 const dbConfig = {
     user: DB_USER,
