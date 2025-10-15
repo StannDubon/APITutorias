@@ -8,8 +8,8 @@ export const getAsistencia = catchAsync(async (req, res) => {
         res.json(result)
     } catch (error) {
         console.log(error)
-        throw AppError("Error al obtener las asistencias", 500)
-    }
+        throw new AppError("Error al obtener las asistencias", 500)
+    }   
 });
 
 export const getAsistenciaById = catchAsync(async (req, res) => {
@@ -22,7 +22,7 @@ export const getAsistenciaById = catchAsync(async (req, res) => {
         res.json(result[0])
     } catch (error) {
         console.log(error)
-        throw AppError("Error al obtener la asistencia", 500)
+        throw new AppError("Error al obtener la asistencia", 500)
     }
 });
 
@@ -36,7 +36,7 @@ export const updateAsistencia = catchAsync(async (req, res) => {
         res.json(result)
     } catch (error) {
         console.log(error)
-        throw AppError("Error al actualizar la asistencia", 500)
+        throw new AppError("Error al actualizar la asistencia", 500)
     }
 });
 
@@ -46,7 +46,7 @@ export const insertAsistencia = catchAsync(async (req, res) => {
         res.json(result)
     } catch (error) {
         console.log(error)
-        throw AppError("Error al insertar la asistencia", 500)
+        throw new AppError("Error al insertar la asistencia", 500)
     }
 });
 
@@ -60,6 +60,6 @@ export const deleteAsistencia = catchAsync(async (req, res) => {
         res.json(result)
     } catch (error) {
         console.log(error)
-        throw AppError("Error al eliminar la asistencia", 500)
+        throw new AppError("Error al eliminar la asistencia", 500)
     }
 });

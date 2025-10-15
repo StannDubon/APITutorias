@@ -14,7 +14,7 @@ export const getUsuarioById = catchAsync(async (req, res) => {
     const result = await unSoloDato(tabla, id);
     
     if (result.length === 0) {
-        throw new AppError("Usuario no encontrado", 404);
+        throw  AppError("Usuario no encontrado", 404);
     }
     
     res.json(result[0]);
@@ -38,7 +38,7 @@ export const addUsuario = catchAsync(async (req, res) => {
     });
     
     if (result === 0) {
-        throw new AppError("Error al crear usuario", 400);
+        throw  AppError("Error al crear usuario", 400);
     }
     
     res.status(201).json({ 
@@ -59,7 +59,7 @@ export const updateUsuario = catchAsync(async (req, res) => {
     const result = await updateDato(tabla, id, datosActualizar);
     
     if (result === 0) {
-        throw new AppError("Usuario no encontrado", 404);
+        throw  AppError("Usuario no encontrado", 404);
     }
     
     res.json({ message: "Usuario actualizado exitosamente" });
@@ -70,7 +70,7 @@ export const deleteUsuario = catchAsync(async (req, res) => {
     const result = await deleteDato(tabla, id);
     
     if (result === 0) {
-        throw new AppError("Usuario no encontrado", 404);
+        throw  AppError("Usuario no encontrado", 404);
     }
     
     res.json({ message: "Usuario eliminado exitosamente" });
@@ -85,7 +85,7 @@ export const desbloquearUsuario = catchAsync(async (req, res) => {
     });
     
     if (result === 0) {
-        throw new AppError("Usuario no encontrado", 404);
+        throw  AppError("Usuario no encontrado", 404);
     }
     
     res.json({ message: "Usuario desbloqueado exitosamente" });

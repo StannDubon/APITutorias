@@ -2,23 +2,20 @@ import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../../config.js';
 import { getConnection } from '../db/conexion.js';
 import sql from 'mssql';
+import { catchAsync, AppError } from './errorHandler.js';
 
-export const verificarToken = async (req, res, next) => {
+export const verificarToken = catchAsync(async (req, res, next) => {
     try {
         // Obtener el header Authorization
         const authHeader = req.headers.authorization;
 
         if (!authHeader) {
-            return res.status(401).json({
-                error: 'Token no proporcionado. Incluye el header: Authorization: Bearer TOKEN'
-            });
+            throw new AppError('Token no proporcionado. Incluye el header: Authorization: Bearer TOKEN', 401);
         }
 
         // Verificar formato "Bearer TOKEN"
         if (!authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({
-                error: 'Formato de token inválido. Usa: Bearer TOKEN'
-            });
+            throw new AppError('Formato de token inválido. Usa: Bearer TOKEN', 401);
         }
 
         // Extraer el token (quitar "Bearer ")
@@ -30,15 +27,11 @@ export const verificarToken = async (req, res, next) => {
             decoded = jwt.verify(token, JWT_SECRET);
         } catch (error) {
             if (error.name === 'TokenExpiredError') {
-                return res.status(401).json({
-                    error: 'Token expirado. Usa el refresh token para obtener uno nuevo'
-                });
+                throw new AppError('Token expirado. Usa el refresh token para obtener uno nuevo', 401);
             }
             
             if (error.name === 'JsonWebTokenError') {
-                return res.status(401).json({
-                    error: 'Token inválido'
-                });
+                throw new AppError('Token inválido', 401);
             }
 
             throw error;
@@ -46,9 +39,7 @@ export const verificarToken = async (req, res, next) => {
 
         // Verificar que sea un ACCESS token
         if (decoded.tipo !== 'access') {
-            return res.status(401).json({
-                error: 'Debes usar un access token, no un refresh token'
-            });
+            throw new AppError('Debes usar un access token, no un refresh token', 401);
         }
 
         // Verificar que el usuario exista y esté activo
@@ -71,17 +62,13 @@ export const verificarToken = async (req, res, next) => {
             `);
 
         if (result.recordset.length === 0) {
-            return res.status(404).json({
-                error: 'Usuario no encontrado'
-            });
+            throw new AppError('Usuario no encontrado', 404);
         }
 
         const usuario = result.recordset[0];
 
         if (!usuario.estado) {
-            return res.status(403).json({
-                error: 'Usuario bloqueado. Contacta al administrador'
-            });
+            throw new AppError('Usuario bloqueado. Contacta al administrador', 403);
         }
 
         // Adjuntar datos del usuario al request
@@ -101,28 +88,20 @@ export const verificarToken = async (req, res, next) => {
 
     } catch (error) {
         console.log(error);
-        res.status(500).json({
-            message: 'Error al verificar el token'
-        });
+       throw new AppError('Error al verificar el token', 500);  
     }
-};
+});
 
 export const verificarNivel = (nivelesPermitidos) => {
     return (req, res, next) => {
         // Verificar que el usuario esté autenticado
         if (!req.usuario) {
-            return res.status(401).json({
-                error: 'Usuario no autenticado. Usa primero el middleware verificarToken'
-            });
+            throw new AppError('Usuario no autenticado. Usa primero el middleware verificarToken', 401);
         }
 
         // Verificar si el nivel del usuario está en los permitidos
         if (!nivelesPermitidos.includes(req.usuario.nivel)) {
-            return res.status(403).json({
-                error: 'No tienes permisos para realizar esta acción',
-                nivelRequerido: nivelesPermitidos,
-                tuNivel: req.usuario.nivel
-            });
+            throw new AppError('No tienes permisos para realizar esta acción', 403);
         }
 
         // El usuario tiene el nivel correcto

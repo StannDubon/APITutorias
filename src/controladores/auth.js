@@ -38,7 +38,7 @@ export const login = catchAsync(async (req, res) => {
 
         // PASO 1: Validar que vengan los datos requeridos
         if (!carnet || !clave) {
-            throw AppError("Carnet y contraseña son requeridos", 400)
+            throw new AppError("Carnet y contraseña son requeridos", 400)
         }
 
         // Buscar usuario por carnet usando SQL directo
@@ -64,7 +64,7 @@ export const login = catchAsync(async (req, res) => {
             `);
 
         if (result.recordset.length === 0) {
-            throw AppError("Credenciales invalidas", 401)
+            throw new AppError("Credenciales invalidas", 401)
         }
 
         const usuario = result.recordset[0];
@@ -72,7 +72,7 @@ export const login = catchAsync(async (req, res) => {
         // Verificar si está bloqueado PERMANENTEMENTE
         // (estado = 0 significa bloqueado por administrador)
         if (!usuario.estado) {
-            throw AppError("Usuario bloqueado permanentemente. Contacta al administrador", 403)
+            throw new AppError("Usuario bloqueado permanentemente. Contacta al administrador", 403)
         }
 
         // PASO 4: Verificar BLOQUEO TEMPORAL por intentos fallidos
@@ -86,7 +86,7 @@ export const login = catchAsync(async (req, res) => {
                 if (tiempoTranscurrido < TIEMPO_BLOQUEO_MINUTOS) {
                     // Aún está bloqueado
                     const minutosRestantes = Math.ceil(TIEMPO_BLOQUEO_MINUTOS - tiempoTranscurrido);
-                    throw AppError(`Cuenta bloqueada temporalmente. Intenta en ${minutosRestantes} minutos`, 403)
+                    throw new AppError(`Cuenta bloqueada temporalmente. Intenta en ${minutosRestantes} minutos`, 403)
                 } else {
                     // Ya pasó el tiempo, resetear intentos
                     await pool.request()
@@ -100,7 +100,7 @@ export const login = catchAsync(async (req, res) => {
                 }
             } else {
                 // Primera vez que alcanza el máximo, establecer fecha
-                await pool.request()
+                    await pool.request()
                     .input('id_usuario', sql.Int, usuario.id_usuario)
                     .query(`
                         UPDATE tbUsuarios 
@@ -108,7 +108,7 @@ export const login = catchAsync(async (req, res) => {
                         WHERE id_usuario = @id_usuario
                     `);
                 
-                throw AppError(`Cuenta bloqueada por ${TIEMPO_BLOQUEO_MINUTOS} minutos debido a múltiples intentos fallidos`, 403)
+                throw new AppError(`Cuenta bloqueada por ${TIEMPO_BLOQUEO_MINUTOS} minutos debido a múltiples intentos fallidos`, 403)
             }
         }
 
@@ -128,7 +128,7 @@ export const login = catchAsync(async (req, res) => {
 
             const intentosRestantes = MAX_LOGIN_ATTEMPTS - (usuario.intentos_login + 1);
 
-            throw AppError('Credenciales inválidas', 401)
+            throw new AppError('Credenciales inválidas', 401)
         }
 
         // login exitoso Resetear intentos fallidos
@@ -152,10 +152,10 @@ export const login = catchAsync(async (req, res) => {
             .input('id_usuario', sql.Int, usuario.id_usuario)
             .input('token', sql.NVarChar(sql.MAX), refreshToken)
             .input('fecha_expiracion', sql.DateTime, fechaExpiracion)
-            .input('activo', sql.Bit, 1)
+            .input('estado', sql.Bit, 1)
             .query(`
-                INSERT INTO tbRefreshTokens (id_usuario, token, fecha_expiracion, activo, fecha_creacion)
-                VALUES (@id_usuario, @token, @fecha_expiracion, @activo, GETDATE())
+                INSERT INTO tbRefreshTokens (id_usuario, token, fecha_expiracion, estado, fecha_creacion)
+                VALUES (@id_usuario, @token, @fecha_expiracion, @estado, GETDATE())
             `);
 
         // Retornar respuesta exitosa
@@ -180,7 +180,7 @@ export const renovarToken = catchAsync(async (req, res) => {
 
         // Validar que venga el refresh token
         if (!refreshToken) {
-            throw AppError("Refresh token es requerido", 400)
+            throw new AppError("Refresh token es requerido", 400)
         }
 
         // Verificar el token con JWT
@@ -188,12 +188,12 @@ export const renovarToken = catchAsync(async (req, res) => {
         try {
             decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
         } catch (error) {
-            throw AppError("Refresh token inválido o expirado", 401)
+            throw new AppError("Refresh token inválido o expirado", 401)
         }
 
         // Verificar que sea un refresh token (no un access token)
         if (decoded.tipo !== 'refresh') {
-            throw AppError("El token proporcionado no es un refresh token", 401)
+            throw new AppError("El token proporcionado no es un refresh token", 401)
         }
 
         // Verificar que el token exista en la BD y esté activo
@@ -206,15 +206,15 @@ export const renovarToken = catchAsync(async (req, res) => {
                     id_refresh_token,
                     id_usuario,
                     fecha_expiracion,
-                    activo
+                    estado
                 FROM tbRefreshTokens
                 WHERE token = @token 
                     AND id_usuario = @id_usuario
-                    AND activo = 1
+                    AND estado = 1
             `);
 
         if (tokenResult.recordset.length === 0) {
-            throw AppError("Refresh token no válido o ha sido revocado", 401)
+            throw new AppError("Refresh token no válido o ha sido revocado", 401)
         }
 
         const tokenData = tokenResult.recordset[0];
@@ -226,11 +226,11 @@ export const renovarToken = catchAsync(async (req, res) => {
                 .input('id_refresh_token', sql.Int, tokenData.id_refresh_token)
                 .query(`
                     UPDATE tbRefreshTokens 
-                    SET activo = 0 
+                    SET estado = 0 
                     WHERE id_refresh_token = @id_refresh_token
                 `);
 
-            throw AppError("Refresh token expirado. Inicia sesión nuevamente", 401)
+            throw new AppError("Refresh token expirado. Inicia sesión nuevamente", 401)
         }
 
         // Obtener datos actuales del usuario
@@ -248,7 +248,7 @@ export const renovarToken = catchAsync(async (req, res) => {
             `);
 
         if (userResult.recordset.length === 0) {
-            throw AppError("Usuario no encontrado", 404)
+            throw new AppError("Usuario no encontrado", 404)
         }
 
         const usuario = userResult.recordset[0];
@@ -264,7 +264,7 @@ export const renovarToken = catchAsync(async (req, res) => {
                     WHERE id_refresh_token = @id_refresh_token
                 `);
 
-                throw AppError("Usuario bloqueado", 403)
+                throw  new AppError("Usuario bloqueado", 403)
         }
 
         // Generar NUEVO access token
@@ -289,7 +289,7 @@ export const logout = catchAsync(async (req, res) => {
         const { refreshToken } = req.body;
 
         if (!refreshToken) {
-            throw AppError("Refresh token es requerido", 400)
+            throw new AppError("Refresh token es requerido", 400)
         }
 
         const pool = await getConnection();
@@ -302,7 +302,7 @@ export const logout = catchAsync(async (req, res) => {
             `);
 
         if (result.rowsAffected[0] === 0) {
-            throw AppError("Refresh token no encontrado o ya fue revocado", 404)
+            throw  new AppError("Refresh token no encontrado o ya fue revocado", 404)
         }
 
         res.json({
@@ -311,7 +311,7 @@ export const logout = catchAsync(async (req, res) => {
 
     } catch (error) {
         console.log(error);
-        throw AppError("Error al cerrar sesión", 500)
+        throw new AppError("Error al cerrar sesión", 500)
     }
 });
 
@@ -335,6 +335,6 @@ export const logoutTodos = catchAsync(async (req, res) => {
 
     } catch (error) {
         console.log(error);
-        throw AppError("Error al cerrar todas las sesiones", 500)
+        throw new AppError("Error al cerrar todas las sesiones", 500)
     }
 });

@@ -183,6 +183,8 @@ CREATE TABLE tbRefreshTokens (
     fecha_creacion DATETIME DEFAULT GETDATE(),
     fecha_expiracion DATETIME NOT NULL,
     revocado BIT DEFAULT 0,
+    activo BIT DEFAULT 1,
+    fecha_revocacion DATETIME,
     
     CONSTRAINT PK_refresh_token PRIMARY KEY (id_refresh_token),
     CONSTRAINT FK_refresh_token_usuario FOREIGN KEY (id_usuario) 
