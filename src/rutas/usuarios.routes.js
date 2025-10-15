@@ -1,7 +1,7 @@
 import {Router} from "express";
 import {getUsuarios, getUsuarioById, addUsuario, updateUsuario, deleteUsuario} from "../controladores/usuarios.js"
 import {validate} from "../middlewares/validacion.js"
-import {crearUsuario, actualizarUsuario} from "../middlewares/scheme/usuarios.js"
+import {crearUsuario, actualizarUsuario} from "../middlewares/scheme/usuariosScheme.js"
 const router = Router()
 
 router.get("/usuarios", getUsuarios)

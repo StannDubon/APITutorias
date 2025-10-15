@@ -1,7 +1,7 @@
 import {Router } from "express";
 import {getAsistencia,getAsistenciaById,updateAsistencia,insertAsistencia,deleteAsistencia} from "../controladores/asistencia.js"
 import { asistenciaTutoria } from "../middlewares/scheme/tutoriasScheme.js";
-import { validate } from "../middlewares/validate.js";
+import { validate } from "../middlewares/validacion.js";
 const router = Router()
 
 router.get("/GETasistencia", getAsistencia)

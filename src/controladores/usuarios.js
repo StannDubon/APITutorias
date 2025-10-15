@@ -1,4 +1,5 @@
 import { catchAsync } from "../middlewares/errorHandler.js";
+import bcrypt from "bcrypt";
 import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato } from "../utilidades/querys.js"
 const tabla = "tbUsuarios";
 
@@ -28,20 +29,31 @@ export const getUsuarioById = catchAsync(async (req, res) => {
 
 export const addUsuario = catchAsync(async (req, res) => {
     try {
-        const {id_nivel, carnet, estado, claveHasheada, nombre, apellido, correo} = req.body
-        const result = await insertDato(tabla, {id_nivel, carnet, estado, claveHasheada, nombre, apellido, correo})
-
-
+        const {id_nivel, carnet, estado, clave, nombre, apellido, correo} = req.body
+        
+        // Hashear la contraseña
+        const saltRounds = 10
+        const claveHasheada = await bcrypt.hash(clave, saltRounds)
+        
+        const result = await insertDato(tabla, {
+            id_nivel, 
+            carnet, 
+            estado, 
+            clave: claveHasheada, // Guardar la contraseña hasheada
+            nombre, 
+            apellido, 
+            correo
+        })
+        
         if (result === 0) {
             return res.status(404).json({ message: "Usuario no encontrado" })
         }
-        res.json({ message: "Usuario insertado" })
+        res.json({ message: "Usuario insertado correctamente" })
     } catch (error) {
         console.log(error)
         res.status(500).json({ message: "Error al insertar el usuario" })
     }
 })
-
 export const updateUsuario = catchAsync(async (req,res) => {
     try {
         const {id} = req.params

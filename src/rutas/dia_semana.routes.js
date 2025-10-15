@@ -1,6 +1,6 @@
 import { Router } from "express";
 import {get_dia_semana,get_dia_seamana_id,update_dia_semana,insert_dia_seamana,delete_dia_semana} from "../controladores/dia_semana.js"
-import { validate } from "../middlewares/validate.js";
+import { validate } from "../middlewares/validacion.js";
 import { DiasSemana  } from "../middlewares/scheme/horariosScheme.js";
 
 const router = Router()

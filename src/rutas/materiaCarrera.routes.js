@@ -1,6 +1,6 @@
 import {Router} from "express";
 import {getMateriaCarrera, getMateriaCarreraById, addMateriaCarrera, updateMateriaCarrera, deleteMateriaCarrera} from "../controladores/materias_carrera.js"
-import { validate } from "../middlewares/validate.js";
+import { validate } from "../middlewares/validacion.js";
 import { MateriaCarrera } from "../middlewares/scheme/materiasScheme.js";
 const router = Router()
 

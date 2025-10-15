@@ -1,6 +1,6 @@
 import { Router } from "express";
 import {getCarreras, getCarrerasById, addCarrera, updateCarrera, deleteCarrera} from "../controladores/carreras.js"
-import { validate } from "../middlewares/validate.js";
+import { validate } from "../middlewares/validacion.js";
 import { Carrera } from "../middlewares/scheme/carreraScheme.js";
 
 const router = Router()

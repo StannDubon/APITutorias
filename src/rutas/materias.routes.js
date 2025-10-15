@@ -1,7 +1,7 @@
 import {Router} from "express";
 import {getMaterias, getMateriaById, addMateria, updateMateria, deleteMateria} from "../controladores/materias.js"
 import {Materia} from "../middlewares/scheme/materiasScheme.js"
-import {validate} from "../middlewares/validate.js"
+import {validate} from "../middlewares/validacion.js"
 const router = Router()
 
 router.get("/getMaterias", getMaterias)

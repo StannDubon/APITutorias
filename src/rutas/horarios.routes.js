@@ -1,6 +1,6 @@
 import { Router } from "express";
 import {getHoraio,getHoraioId,updateHorario,insertHorario,deleteHorario} from "../controladores/horarios.js"
-import { validate } from "../middlewares/validate.js";
+import { validate } from "../middlewares/validacion.js";
 import { Horarios } from "../middlewares/scheme/horariosScheme.js";
 
 const router = Router() 

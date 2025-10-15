@@ -1,6 +1,6 @@
 import {Router} from "express";
 import {getTipoCarreras, getTipoCarreraById, addTipoCarrera, updateTipoCarrera, deleteTipoCarrera} from "../controladores/tipoCarrera.js"
-import {validate} from "../middlewares/validate.js"
+import {validate} from "../middlewares/validacion.js"
 import {TipoCarrera} from "../middlewares/scheme/carreraScheme.js"
 const router = Router()
 
