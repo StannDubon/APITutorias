@@ -1,19 +1,19 @@
 import { Router } from "express";
-import {getEstados, getEstadoById, insertEstado, deleteEstado, updateEstado} from "../controladores/nivelesUsuarios.js"
+import {getNivelesUsuarios, getNivelUsuarioById, insertNivelUsuario, deleteNivelUsuario, updateNivelUsuario} from "../controladores/nivelesUsuarios.js"
 import {validate} from "../middlewares/validacion.js"
 import {nivelUsuario} from "../middlewares/scheme/usuariosScheme.js"
 import {verificarToken, verificarNivel} from "../middlewares/authMiddleware.js"
 const router = Router()
 
-router.get("/estados", verificarToken, verificarNivel(['admin']), getEstados)
+router.get("/nivelesUsuario", verificarToken, verificarNivel(['admin']), getNivelesUsuarios)
 
-router.get("/estado/:id", verificarToken, verificarNivel(['admin']), getEstadoById)
+router.get("/nivelesUsuario/:id", verificarToken, verificarNivel(['admin']), getNivelUsuarioById)
 
-router.post("/newEstado", verificarToken, verificarNivel(['admin']), validate(nivelUsuario), insertEstado)
+router.post("/newNivelUsuario", verificarToken, verificarNivel(['admin']), validate(nivelUsuario), insertNivelUsuario)
 
-router.put("/actuEstado/:id", verificarToken, verificarNivel(['admin']), validate(nivelUsuario), updateEstado)
+router.put("/actuNivelUsuario/:id", verificarToken, verificarNivel(['admin']), validate(nivelUsuario), updateNivelUsuario)
 
-router.delete("/deleteEstado/:id", verificarToken, verificarNivel(['admin']), deleteEstado)
+router.delete("/deleteNivelUsuario/:id", verificarToken, verificarNivel(['admin']), deleteNivelUsuario)
 
 
 export default router;

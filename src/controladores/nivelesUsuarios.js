@@ -2,70 +2,70 @@ import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato } from "../u
 const tabla = "tbNivelesUsuarios";
 import { catchAsync, AppError } from "../middlewares/errorHandler.js";
 
-export const getEstados = catchAsync(async (req, res) => {
+export const getNivelesUsuarios = catchAsync(async (req, res) => {
     try {
         const result = await todosDatos(tabla);
         res.json(result)
     } catch (error) {
         console.log(error)
-        throw new   AppError("Error al obtener los estados", 500)
+        throw new   AppError("Error al obtener los niveles de usuario", 500)
     }
 });
 
-export const getEstadoById = catchAsync(async (req, res) => {
+export const getNivelUsuarioById = catchAsync(async (req, res) => {
     try {
         const { id } = req.params
         const result = await unSoloDato(tabla, id)
         if (result.length === 0) {
-            throw new AppError("Estado no encontrado", 404)
+            throw new AppError("Nivel de usuario no encontrado", 404)
         }
         res.json(result[0])
     } catch (error) {
         console.log(error)
-        throw new AppError("Error al obtener el estado", 500)
+        throw new AppError("Error al obtener el nivel de usuario", 500)
     }
 });
 
-export const updateEstado = catchAsync(async (req, res) => {
+export const updateNivelUsuario = catchAsync(async (req, res) => {
     try {
         const { id } = req.params
         const result = await updateDato(tabla, id, req.body)
         if (result === 0) {
-            throw new AppError("Estado no encontrado", 404)
+            throw new AppError("Nivel de usuario no encontrado", 404)
         }
-        res.json({ message: "Estado actualizado" })
+        res.json({ message: "Nivel de usuario actualizado" })
     } catch (error) {
         console.log(error)
-        throw new AppError("Error al actualizar el estado", 500)
+        throw new AppError("Error al actualizar el nivel de usuario", 500)
     }
 });
 
-export const insertEstado = catchAsync(async (req, res) => {
+export const insertNivelUsuario = catchAsync(async (req, res) => {
 
     try {
         const { nivel } = req.body
         const result = await insertDato(tabla, { nivel })
         if (result === 0) {
-            throw new AppError("Estado no encontrado", 404)
+            throw new AppError("Nivel de usuario no encontrado", 404)
         }
-        res.json({ message: "Estado insertado" })
+        res.json({ message: "Nivel de usuario insertado" })
     } catch (error) {
         console.log(error)
-        throw new AppError("Error al insertar el estado o estado duplicado", 500)
+        throw new AppError("Error al insertar el nivel de usuario o nivel de usuario duplicado", 500)
     }
 });
 
-export const deleteEstado = catchAsync(async (req, res) => {
+export const deleteNivelUsuario = catchAsync(async (req, res) => {
     try {
         const { id } = req.params
         const result = await deleteDato(tabla, id)
         if (result === 0) {
-            throw new AppError("Estado no encontrado", 404)
+            throw new AppError("Nivel de usuario no encontrado", 404)
         }
-        res.json({ message: "Estado eliminado" })
+        res.json({ message: "Nivel de usuario eliminado" })
     } catch (error) {
         console.log(error)
-        throw new AppError("Error al eliminar el estado", 500)
+        throw new AppError("Error al eliminar el nivel de usuario", 500)
     }
 });
 

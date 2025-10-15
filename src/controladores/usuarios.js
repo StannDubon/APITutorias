@@ -1,5 +1,7 @@
 import { catchAsync, AppError } from "../middlewares/errorHandler.js";
 import bcrypt from "bcrypt";
+import sql from "mssql";
+import {getConnection} from "../db/conexion.js"
 import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato } from "../utilidades/querys.js"
 
 const tabla = "tbUsuarios";
@@ -67,14 +69,73 @@ export const updateUsuario = catchAsync(async (req, res) => {
 
 export const deleteUsuario = catchAsync(async (req, res) => {
     const { id } = req.params;
-    const result = await deleteDato(tabla, id);
+    const pool = await getConnection();
+    const transaction = new sql.Transaction(pool);
     
-    if (result === 0) {
-        throw  AppError("Usuario no encontrado", 404);
+    try {
+        await transaction.begin();
+        
+        // Verificar si el usuario existe
+        const checkUser = await transaction.request()
+            .input('id_usuario', sql.Int, id)
+            .query('SELECT id_usuario FROM tbUsuarios WHERE id_usuario = @id_usuario');
+        
+        if (checkUser.recordset.length === 0) {
+            await transaction.rollback();
+            throw new AppError("Usuario no encontrado", 404);
+        }
+        
+        
+        await transaction.request()
+            .input('id_usuario', sql.Int, id)
+            .query('DELETE FROM tbAsistencias WHERE id_usuario = @id_usuario');
+        
+        await transaction.request()
+            .input('id_usuario', sql.Int, id)
+            .query(`
+                DELETE FROM tbAsistencias 
+                WHERE id_tutoria IN (
+                    SELECT id_tutoria FROM tbTutorias WHERE id_tutor = @id_usuario
+                )
+            `);
+        
+        await transaction.request()
+            .input('id_usuario', sql.Int, id)
+            .query('DELETE FROM tbTutorias WHERE id_tutor = @id_usuario');
+        
+        await transaction.request()
+            .input('id_usuario', sql.Int, id)
+            .query('DELETE FROM tbRefreshTokens WHERE id_usuario = @id_usuario');
+        
+        await transaction.request()
+            .input('id_usuario', sql.Int, id)
+            .query('DELETE FROM tbUsuarios WHERE id_usuario = @id_usuario');
+        
+        await transaction.commit();
+        
+        res.json({ 
+            message: "Usuario eliminado exitosamente",
+            detalles: "Se eliminaron todas las asistencias, tutorías y tokens asociados"
+        });
+        
+    } catch (error) {
+        if (transaction) {
+            try {
+                await transaction.rollback();
+            } catch (rollbackError) {
+                console.log("Error en rollback:", rollbackError);
+            }
+        }
+        console.log(error);
+        
+        if (error instanceof AppError) {
+            throw error;
+        }
+        
+        throw new AppError("Error al eliminar el usuario", 500);
     }
-    
-    res.json({ message: "Usuario eliminado exitosamente" });
 });
+
 
 export const desbloquearUsuario = catchAsync(async (req, res) => {
     const { id } = req.params;
