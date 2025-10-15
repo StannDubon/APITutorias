@@ -161,6 +161,14 @@ export const login = catchAsync(async (req, res) => {
         // Retornar respuesta exitosa
         res.json({
             mensaje: 'Login exitoso',
+            usuario: {
+                id: usuario.id_usuario,
+                carnet: usuario.carnet,
+                nombre: usuario.nombre,
+                apellido: usuario.apellido,
+                correo: usuario.correo,
+                nivel: usuario.nivel
+            },
             accessToken,
             refreshToken
         });
