@@ -3,6 +3,8 @@ import jwt from 'jsonwebtoken';
 import { getConnection } from '../db/conexion.js';
 import sql from 'mssql';
 import { JWT_SECRET, JWT_REFRESH_SECRET, JWT_EXPIRES_IN, JWT_REFRESH_EXPIRES_IN, MAX_LOGIN_ATTEMPTS } from '../../config.js';
+import {catchAsync, AppError} from '../middlewares/errorHandler.js'
+
 
 const generarAccessToken = (usuario) => {
     const payload = {
@@ -30,15 +32,13 @@ const generarRefreshToken = (usuario) => {
     });
 };
 
-export const login = async (req, res) => {
+export const login = catchAsync(async (req, res) => {
     try {
         const { carnet, clave } = req.body;
 
         // PASO 1: Validar que vengan los datos requeridos
         if (!carnet || !clave) {
-            return res.status(400).json({
-                error: 'Carnet y contraseña son requeridos'
-            });
+            throw AppError("Carnet y contraseña son requeridos", 400)
         }
 
         // Buscar usuario por carnet usando SQL directo
@@ -64,9 +64,7 @@ export const login = async (req, res) => {
             `);
 
         if (result.recordset.length === 0) {
-            return res.status(401).json({
-                error: 'Credenciales inválidas'
-            });
+            throw AppError("Credenciales invalidas", 401)
         }
 
         const usuario = result.recordset[0];
@@ -74,9 +72,7 @@ export const login = async (req, res) => {
         // Verificar si está bloqueado PERMANENTEMENTE
         // (estado = 0 significa bloqueado por administrador)
         if (!usuario.estado) {
-            return res.status(403).json({
-                error: 'Usuario bloqueado permanentemente. Contacta al administrador'
-            });
+            throw AppError("Usuario bloqueado permanentemente. Contacta al administrador", 403)
         }
 
         // PASO 4: Verificar BLOQUEO TEMPORAL por intentos fallidos
@@ -90,9 +86,7 @@ export const login = async (req, res) => {
                 if (tiempoTranscurrido < TIEMPO_BLOQUEO_MINUTOS) {
                     // Aún está bloqueado
                     const minutosRestantes = Math.ceil(TIEMPO_BLOQUEO_MINUTOS - tiempoTranscurrido);
-                    return res.status(403).json({
-                        error: `Cuenta bloqueada temporalmente. Intenta en ${minutosRestantes} minutos`
-                    });
+                    throw AppError(`Cuenta bloqueada temporalmente. Intenta en ${minutosRestantes} minutos`, 403)
                 } else {
                     // Ya pasó el tiempo, resetear intentos
                     await pool.request()
@@ -114,9 +108,7 @@ export const login = async (req, res) => {
                         WHERE id_usuario = @id_usuario
                     `);
                 
-                return res.status(403).json({
-                    error: `Cuenta bloqueada por ${TIEMPO_BLOQUEO_MINUTOS} minutos debido a múltiples intentos fallidos`
-                });
+                throw AppError(`Cuenta bloqueada por ${TIEMPO_BLOQUEO_MINUTOS} minutos debido a múltiples intentos fallidos`, 403)
             }
         }
 
@@ -136,10 +128,7 @@ export const login = async (req, res) => {
 
             const intentosRestantes = MAX_LOGIN_ATTEMPTS - (usuario.intentos_login + 1);
 
-            return res.status(401).json({
-                error: 'Credenciales inválidas',
-                intentosRestantes: Math.max(0, intentosRestantes)
-            });
+            throw AppError('Credenciales inválidas', 401)
         }
 
         // login exitoso Resetear intentos fallidos
@@ -172,14 +161,6 @@ export const login = async (req, res) => {
         // Retornar respuesta exitosa
         res.json({
             mensaje: 'Login exitoso',
-            usuario: {
-                id: usuario.id_usuario,
-                carnet: usuario.carnet,
-                nombre: usuario.nombre,
-                apellido: usuario.apellido,
-                correo: usuario.correo,
-                nivel: usuario.nivel
-            },
             accessToken,
             refreshToken
         });
@@ -191,17 +172,15 @@ export const login = async (req, res) => {
             detalle: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
-};
+});
 
-export const renovarToken = async (req, res) => {
+export const renovarToken = catchAsync(async (req, res) => {
     try {
         const { refreshToken } = req.body;
 
         // Validar que venga el refresh token
         if (!refreshToken) {
-            return res.status(400).json({
-                error: 'Refresh token es requerido'
-            });
+            throw AppError("Refresh token es requerido", 400)
         }
 
         // Verificar el token con JWT
@@ -209,16 +188,12 @@ export const renovarToken = async (req, res) => {
         try {
             decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
         } catch (error) {
-            return res.status(401).json({
-                error: 'Refresh token inválido o expirado'
-            });
+            throw AppError("Refresh token inválido o expirado", 401)
         }
 
         // Verificar que sea un refresh token (no un access token)
         if (decoded.tipo !== 'refresh') {
-            return res.status(401).json({
-                error: 'El token proporcionado no es un refresh token'
-            });
+            throw AppError("El token proporcionado no es un refresh token", 401)
         }
 
         // Verificar que el token exista en la BD y esté activo
@@ -239,9 +214,7 @@ export const renovarToken = async (req, res) => {
             `);
 
         if (tokenResult.recordset.length === 0) {
-            return res.status(401).json({
-                error: 'Refresh token no válido o ha sido revocado'
-            });
+            throw AppError("Refresh token no válido o ha sido revocado", 401)
         }
 
         const tokenData = tokenResult.recordset[0];
@@ -257,9 +230,7 @@ export const renovarToken = async (req, res) => {
                     WHERE id_refresh_token = @id_refresh_token
                 `);
 
-            return res.status(401).json({
-                error: 'Refresh token expirado. Inicia sesión nuevamente'
-            });
+            throw AppError("Refresh token expirado. Inicia sesión nuevamente", 401)
         }
 
         // Obtener datos actuales del usuario
@@ -277,9 +248,7 @@ export const renovarToken = async (req, res) => {
             `);
 
         if (userResult.recordset.length === 0) {
-            return res.status(404).json({
-                error: 'Usuario no encontrado'
-            });
+            throw AppError("Usuario no encontrado", 404)
         }
 
         const usuario = userResult.recordset[0];
@@ -295,9 +264,7 @@ export const renovarToken = async (req, res) => {
                     WHERE id_refresh_token = @id_refresh_token
                 `);
 
-            return res.status(403).json({
-                error: 'Usuario bloqueado'
-            });
+                throw AppError("Usuario bloqueado", 403)
         }
 
         // Generar NUEVO access token
@@ -315,16 +282,14 @@ export const renovarToken = async (req, res) => {
             message: "Error al renovar token"
         });
     }
-};
+});
 
-export const logout = async (req, res) => {
+export const logout = catchAsync(async (req, res) => {
     try {
         const { refreshToken } = req.body;
 
         if (!refreshToken) {
-            return res.status(400).json({
-                error: 'Refresh token es requerido'
-            });
+            throw AppError("Refresh token es requerido", 400)
         }
 
         const pool = await getConnection();
@@ -337,9 +302,7 @@ export const logout = async (req, res) => {
             `);
 
         if (result.rowsAffected[0] === 0) {
-            return res.status(404).json({
-                error: 'Refresh token no encontrado o ya fue revocado'
-            });
+            throw AppError("Refresh token no encontrado o ya fue revocado", 404)
         }
 
         res.json({
@@ -348,13 +311,11 @@ export const logout = async (req, res) => {
 
     } catch (error) {
         console.log(error);
-        res.status(500).json({ 
-            message: "Error al cerrar sesión"
-        });
+        throw AppError("Error al cerrar sesión", 500)
     }
-};
+});
 
-export const logoutTodos = async (req, res) => {
+export const logoutTodos = catchAsync(async (req, res) => {
     try {
         // req.usuario viene del middleware verificarToken
         const idUsuario = req.usuario.id;
@@ -374,8 +335,6 @@ export const logoutTodos = async (req, res) => {
 
     } catch (error) {
         console.log(error);
-        res.status(500).json({ 
-            message: "Error al cerrar todas las sesiones"
-        });
+        throw AppError("Error al cerrar todas las sesiones", 500)
     }
-};
+});

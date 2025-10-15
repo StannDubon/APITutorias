@@ -1,64 +1,65 @@
 import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato } from "../utilidades/querys.js"
+import {catchAsync, AppError} from "../middlewares/errorHandler.js"
 const tabla = "tbHorarioDiaSemanas";
 
-export const getHorarioDiaSemana = async (req, res) => {
+export const getHorarioDiaSemana = catchAsync(async (req, res) => {
     try {
         const result = await todosDatos(tabla);
         res.json(result)
     } catch (error) {
         console.log(error)
-        res.status(500).json({ message: "Error al obtener los horarios de la semana" })
+        throw AppError("Error al obtener los horarios de la semana", 500)
     }
-}
+})
 
-export const getHorarioDiaSemanaId = async (req, res) => {
+export const getHorarioDiaSemanaId = catchAsync(async (req, res) => {
     try {
         const { id } = req.params
         const result = await unSoloDato(tabla, id)
         if (result.length === 0) {
-            return res.status(404).json({ message: "Horario de la semana no encontrado" })
+            throw AppError("Horario de la semana no encontrado", 404)
         }
         res.json(result[0])
     } catch (error) {
         console.log(error)
-        res.status(500).json({ message: "Error al obtener el horario de la semana" })
+        throw AppError("Error al obtener el horario de la semana", 500)
     }
-}
+})
 
-export const updateHorarioDiaSemana = async (req, res) => {
+export const updateHorarioDiaSemana = catchAsync(async (req, res) => {
     try {
         const { id } = req.params
         const result = await updateDato(tabla, id, req.body)
         if (result === 0) {
-            return res.status(404).json({ message: "Horario de la semana no encontrado" })
+            throw AppError("Horario de la semana no encontrado", 404)
         }
         res.json(result)
     } catch (error) {
         console.log(error)
-        res.status(500).json({ message: "Error al actualizar el horario de la semana" })
+        throw AppError("Error al actualizar el horario de la semana", 500)
     }
-}
+})
 
-export const insertHorarioDiaSemana = async (req, res) => {
+export const insertHorarioDiaSemana = catchAsync(async (req, res) => {
     try {
         const result = await insertDato(tabla, req.body)
         res.json(result)
     } catch (error) {
         console.log(error)
-        res.status(500).json({ message: "Error al insertar el horario de la semana" })
+        throw AppError("Error al insertar el horario de la semana", 500)
     }
-}
+})
 
-export const deleteHorarioDiaSemana = async (req, res) => {
+export const deleteHorarioDiaSemana = catchAsync(async (req, res) => {
     try {
         const { id } = req.params
         const result = await deleteDato(tabla, id)
         if (result === 0) {
-            return res.status(404).json({ message: "Horario de la semana no encontrado" })
+            throw AppError("Horario de la semana no encontrado", 404)
         }
         res.json(result)
     } catch (error) {
         console.log(error)
-        res.status(500).json({ message: "Error al eliminar el horario de la semana" })
+        throw AppError("Error al eliminar el horario de la semana", 500)
     }
-}
+});

@@ -1,69 +1,70 @@
 import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato } from "../utilidades/querys.js"
 const tabla = "tbMaterias";
+import {catchAsync, AppError} from "../middlewares/errorHandler.js"
 
-export const getMaterias = async (req, res) => {
+export const getMaterias = catchAsync(async (req, res) => {
     try {
         const result = await todosDatos(tabla);
         res.json(result)
     } catch (error) {
         console.log(error)
-        res.status(500).json({ message: "Error al obtener las materias" })
+        throw AppError("Error al obtener las materias", 500)
     }
-}
+})
 
-export const getMateriaById = async (req, res) => {
+export const getMateriaById = catchAsync(async (req, res) => {
 
     try {
         const { id } = req.params
         const result = await unSoloDato(tabla, id)
         if (result.length === 0) {
-            return res.status(404).json({ message: "Materia no encontrada" })
+            throw AppError("Materia no encontrada", 404)
         }
         res.json(result[0])
     } catch (error) {
         console.log(error)
-        res.status(500).json({ message: "Error al obtener la materia" })
+        throw AppError("Error al obtener la materia", 500)
     }
-}
+})
 
-export const addMateria = async (req, res) => {
+export const addMateria = catchAsync(async (req, res) => {
     try {
         const { nombre_materia } = req.body
         const result = await insertDato(tabla, { nombre_materia })
         if (result === 0) {
-            return res.status(404).json({ message: "Materia no encontrada" })
+            throw AppError("Materia no encontrada", 404)
         }
         res.json({ message: "Materia insertada" })
     } catch (error) {
         console.log(error)
-        res.status(500).json({ message: "Error al insertar la materia" })
+        throw AppError("Error al insertar la materia", 500)
     }
-}
+});
 
-export const updateMateria = async (req, res) => {
+export const updateMateria = catchAsync(async (req, res) => {
     try {
         const { id } = req.params
         const result = await updateDato(tabla, id, req.body)
         if (result === 0) {
-            return res.status(404).json({ message: "Materia no encontrada" })
+            throw AppError("Materia no encontrada", 404)
         }
         res.json({ message: "Materia actualizada" })
     } catch (error) {
         console.log(error)
-        res.status(500).json({ message: "Error al actualizar la materia" })
+        throw AppError("Error al actualizar la materia", 500)
     }
-}
+});
 
-export const deleteMateria = async (req, res) => {
+export const deleteMateria = catchAsync(async (req, res) => {
     try {
         const { id } = req.params
         const result = await deleteDato(tabla, id)
         if (result === 0) {
-            return res.status(404).json({ message: "Materia no encontrada o invalida" })
+            throw AppError("Materia no encontrada", 404)
         }
         res.json({ message: "Materia eliminada" })
     } catch (error) {
         console.log(error)
-        res.status(500).json({ message: "Error al eliminar la materia" })
+        throw AppError("Error al eliminar la materia", 500)
     }
-}
+});

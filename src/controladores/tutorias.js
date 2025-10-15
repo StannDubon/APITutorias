@@ -1,65 +1,66 @@
 import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato } from "../utilidades/querys.js"
 const tabla = "tbTutorias";
+import { catchAsync, AppError } from "../middlewares/errorHandler.js";
 
-export const getTutoria = async (req, res) => {
+export const getTutoria = catchAsync(async (req, res) => {
     try {
         const result = await todosDatos(tabla);
         res.json(result)
     } catch (error) {
         console.log(error)
-        res.status(500).json({ message: "Error al obtener las tutorias" })
+        throw AppError("Error al obtener las tutorias", 500)
     }
-}
+});
 
-export const getTutoriaId = async (req, res) => {
+export const getTutoriaId = catchAsync(async (req, res) => {
     try {
         const { id } = req.params
         const result = await unSoloDato(tabla, id)
         if (result.length === 0) {
-            return res.status(404).json({ message: "Tutoria no encontrada" })
+            throw AppError("Tutoria no encontrada", 404)
         }
         res.json(result[0])
     } catch (error) {
         console.log(error)
-        res.status(500).json({ message: "Error al obtener la tutoria" })
+        throw AppError("Error al obtener la tutoria", 500)
     }
-}
+});
 
-export const updateTutoria = async (req, res) => {
+export const updateTutoria = catchAsync(async (req, res) => {
     try {
         const { id } = req.params
         const result = await updateDato(tabla, id, req.body)
         if (result === 0) {
-            return res.status(404).json({ message: "Tutoria no encontrada" })
+            throw AppError("Tutoria no encontrada", 404)
         }
         res.json(result)
     } catch (error) {
         console.log(error)
-        res.status(500).json({ message: "Error al actualizar la tutoria" })
+        throw AppError("Error al actualizar la tutoria", 500)
     }
-}
+});
 
-export const insertTutoria = async (req, res) => {
+export const insertTutoria = catchAsync(async (req, res) => {
     try {
         const result = await insertDato(tabla, req.body)
         res.json(result)
     } catch (error) {
         console.log(error)
-        res.status(500).json({ message: "Error al insertar la tutoria" })
+        throw AppError("Error al insertar la tutoria", 500)
     }
-}
+});
 
-export const deleteTutoria = async (req, res) => {
+export const deleteTutoria = catchAsync(async (req, res) => {
     try {
         const { id } = req.params
         const result = await deleteDato(tabla, id)
         if (result === 0) {
-            return res.status(404).json({ message: "Tutoria no encontrada" })
+            throw AppError("Tutoria no encontrada", 404)
         }
         res.json(result)
     } catch (error) {
         console.log(error)
-        res.status(500).json({ message: "Error al eliminar la tutoria" })
+        throw AppError("Error al eliminar la tutoria", 500)
     }
-}
+});
 

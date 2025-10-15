@@ -1,68 +1,70 @@
 import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato } from "../utilidades/querys.js"
 const tabla = "tbCarreras";
+import { catchAsync, AppError } from "../middlewares/errorHandler.js";
 
-export const getCarreras = async (req, res) => {
+
+export const getCarreras = catchAsync(async (req, res) => {
     try {
         const result = await todosDatos(tabla);
         res.json(result)
     } catch (error) {
         console.log(error)
-        res.status(500).json({ message: "Error al obtener las carreras" })
+        throw AppError("Error al obtener las carreras", 500)
     }
-}
+});
 
-export const getCarrerasById = async (req,res) => {
+export const getCarrerasById = catchAsync(async (req,res) => {
     try {
         const {id} = req.params
         const result = await unSoloDato(tabla,id)
         if (result.length === 0) {
-            return res.status(404).json({ message: "Carrera no encontrada" })
+            throw AppError("Carrera no encontrada", 404);
         }
         res.json(result[0])
     } catch (error) {
         console.log(error)
-        res.status(500).json({ message: "Error al obtener la carrera" })
+        throw AppError("Error al obtener la carrera", 500)
     }
-}
+});
 
-export const addCarrera = async (req,res) => {
+export const addCarrera = catchAsync(async (req,res) => {
     try {
         const {id_tipo_carrera, nombre_carrera} = req.body
         const result = await insertDato(tabla, {id_tipo_carrera, nombre_carrera})
         if (result === 0) {
-            return res.status(404).json({ message: "Carrera no encontrada" })
+            throw AppError("Carrera no encontrada", 404);
         }
         res.json({ message: "Carrera insertada" })
     } catch (error) {
         console.log(error)
-        res.status(500).json({ message: "Error al insertar la carrera" })
+        throw AppError("Error al insertar la carrera", 500)
     }
-}
+});
 
-export const updateCarrera = async(req, res) => {
+export const updateCarrera = catchAsync(async(req, res) => {
     try {
         const {id} = req.params
         const result = await updateDato(tabla, id, req.body)
         if (result === 0) {
-            return res.status(404).json({ message: "Carrera no encontrada" })
+            throw AppError("Carrera no encontrada", 404);
         }
         res.json({ message: "Carrera actualizada" })
     } catch (error) {
         console.log(error)
-        res.status(500).json({ message: "Error al actualizar la carrera" })
+        throw AppError("Error al actualizar la carrera", 500)
     }
-}
+});
 
-export const deleteCarrera = async (req,res) => {
+export const deleteCarrera = catchAsync(async (req,res) => {
     try {
         const {id} = req.params
         const result = await deleteDato(tabla,id)
         if (result === 0) {
-            return res.status(404).json({ message: "Carrera no encontrada" })
+            throw AppError("Carrera no encontrada", 404);
         }
         res.json({ message: "Carrera eliminada" })
     } catch (error) {
         console.log(error)
-        res.status(500).json({ message: "Error al eliminar la carrera" })
+        throw AppError("Error al eliminar la carrera", 500)
     }
-}
+});

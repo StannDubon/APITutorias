@@ -2,68 +2,94 @@ export class AppError extends Error {
     constructor(message, statusCode) {
         super(message);
         this.statusCode = statusCode;
-        this.isOperational = true; // Error que esperábamos
-        
+        this.isOperational = true;
         Error.captureStackTrace(this, this.constructor);
     }
 }
 
-export const errorHandler = (err, req, res,next) => {
+export const errorHandler = (err, req, res, next) => {
+    // Valores por defecto
     err.statusCode = err.statusCode || 500;
     err.message = err.message || 'Error interno del servidor';
 
-}
+    // Si es error de SQL
+    if (err.number) {
+        err = handleSQLError(err);
+    }
 
-//ERRORES SQL
+    // Si es error de Joi
+    if (err.isJoi) {
+        err = handleJoiError(err);
+    }
 
-const handlerSQLError = (err, req, res, next) => {
+    // Si es error de JWT
+    if (err.name === 'JsonWebTokenError') {
+        err = handleJWTError();
+    }
+    if (err.name === 'TokenExpiredError') {
+        err = handleJWTExpiredError();
+    }
+
+    // Responder con el error
+    res.status(err.statusCode).json({
+        status: 'error',
+        message: err.message,
+        ...(process.env.NODE_ENV === 'development' && { 
+            stack: err.stack,
+            error: err 
+        })
+    });
+};
+
+// Manejador de errores SQL
+const handleSQLError = (err) => {
     let message = 'Error de la base de datos';
     let statusCode = 400;
 
-    // Códigos de error comunes de SQL Server
     switch (err.number) {
         case 2627: // Violación de UNIQUE constraint
-            message = 'Este registro ya existe';
-            statusCode = 409; // Conflict
+            message = 'Este registro ya existe (dato duplicado)';
+            statusCode = 409;
             break;
         case 547: // Violación de FOREIGN KEY constraint
-            message = 'No se puede eliminar este registro porque está siendo usado';
+            message = 'No se puede eliminar/modificar porque está siendo usado por otro registro';
             statusCode = 409;
             break;
         case 515: // Campo NOT NULL sin valor
             message = 'Faltan campos requeridos';
             statusCode = 400;
             break;
-        case 8152: // String truncado (dato muy largo)
+        case 8152: // String truncado
             message = 'Uno de los campos es demasiado largo';
             statusCode = 400;
             break;
-        case 245: // Error de conversión de tipos
+        case 245: // Error de conversión
             message = 'Tipo de dato incorrecto';
             statusCode = 400;
             break;
+        case 207: // Columna inválida
+            message = 'Campo inválido en la base de datos';
+            statusCode = 400;
+            break;
         default:
-            message = 'Error en la base de datos';
+            message = err.message || 'Error en la base de datos';
             statusCode = 500;
     }
+    
     return new AppError(message, statusCode);
 };
 
-//ERRORES JOI
-
+// Manejador de errores Joi
 const handleJoiError = (err) => {
-    // Extraer mensajes de error de Joi
     const errors = err.details.map(detail => ({
         campo: detail.path[0],
         mensaje: detail.message
     }));
-
     const message = `Datos inválidos: ${errors.map(e => e.mensaje).join('. ')}`;
     return new AppError(message, 400);
 };
 
-//ERRORES JWT
-
+// Manejadores JWT
 const handleJWTError = () => {
     return new AppError('Token inválido. Inicia sesión nuevamente', 401);
 };
@@ -72,6 +98,7 @@ const handleJWTExpiredError = () => {
     return new AppError('Tu sesión ha expirado. Inicia sesión nuevamente', 401);
 };
 
+// Middleware para rutas no encontradas
 export const notFound = (req, res, next) => {
     const error = new AppError(
         `No se encontró la ruta ${req.originalUrl}`, 
@@ -80,8 +107,9 @@ export const notFound = (req, res, next) => {
     next(error);
 };
 
+// Wrapper para async/await
 export const catchAsync = (fn) => {
     return (req, res, next) => {
-        fn(req, res, next).catch(next);
+        Promise.resolve(fn(req, res, next)).catch(next);
     };
 };

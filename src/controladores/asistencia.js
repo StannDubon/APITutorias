@@ -1,64 +1,65 @@
 import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato } from "../utilidades/querys.js"
+import { catchAsync, AppError } from "../middlewares/errorHandler.js"
 const tabla = "tbAsistencias";
 
-export const getAsistencia = async (req, res) => {
+export const getAsistencia = catchAsync(async (req, res) => {
     try {
         const result = await todosDatos(tabla);
         res.json(result)
     } catch (error) {
         console.log(error)
-        res.status(500).json({ message: "Error al obtener las asistencias" })
+        throw AppError("Error al obtener las asistencias", 500)
     }
-}
+});
 
-export const getAsistenciaById = async (req, res) => {
+export const getAsistenciaById = catchAsync(async (req, res) => {
     try {
         const { id } = req.params
         const result = await unSoloDato(tabla, id)
         if (result.length === 0) {
-            return res.status(404).json({ message: "Asistencia no encontrada" })
+            throw new AppError("Asistencia no encontrada", 404);
         }
         res.json(result[0])
     } catch (error) {
         console.log(error)
-        res.status(500).json({ message: "Error al obtener la asistencia" })
+        throw AppError("Error al obtener la asistencia", 500)
     }
-}
+});
 
-export const updateAsistencia = async (req, res) => {
+export const updateAsistencia = catchAsync(async (req, res) => {
     try {
         const { id } = req.params
         const result = await updateDato(tabla, id, req.body)
         if (result === 0) {
-            return res.status(404).json({ message: "Asistencia no encontrada" })
+            throw new AppError("Asistencia no encontrada", 404);
         }
         res.json(result)
     } catch (error) {
         console.log(error)
-        res.status(500).json({ message: "Error al actualizar la asistencia" })
+        throw AppError("Error al actualizar la asistencia", 500)
     }
-}
+});
 
-export const insertAsistencia = async (req, res) => {
+export const insertAsistencia = catchAsync(async (req, res) => {
     try {
         const result = await insertDato(tabla, req.body)
         res.json(result)
     } catch (error) {
         console.log(error)
-        res.status(500).json({ message: "Error al insertar la asistencia" })
+        throw AppError("Error al insertar la asistencia", 500)
     }
-}
+});
 
-export const deleteAsistencia = async (req, res) => {
+export const deleteAsistencia = catchAsync(async (req, res) => {
     try {
         const { id } = req.params
         const result = await deleteDato(tabla, id)
         if (result === 0) {
-            return res.status(404).json({ message: "Asistencia no encontrada" })
+            throw new AppError("Asistencia no encontrada", 404);
         }
         res.json(result)
     } catch (error) {
         console.log(error)
-        res.status(500).json({ message: "Error al eliminar la asistencia" })
+        throw AppError("Error al eliminar la asistencia", 500)
     }
-}
+});
