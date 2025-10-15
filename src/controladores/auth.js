@@ -206,11 +206,11 @@ export const renovarToken = catchAsync(async (req, res) => {
                     id_refresh_token,
                     id_usuario,
                     fecha_expiracion,
-                    estado
+                    activo
                 FROM tbRefreshTokens
                 WHERE token = @token 
                     AND id_usuario = @id_usuario
-                    AND estado = 1
+                    AND activo = 1
             `);
 
         if (tokenResult.recordset.length === 0) {
@@ -226,7 +226,7 @@ export const renovarToken = catchAsync(async (req, res) => {
                 .input('id_refresh_token', sql.Int, tokenData.id_refresh_token)
                 .query(`
                     UPDATE tbRefreshTokens 
-                    SET estado = 0 
+                    SET activo = 0 
                     WHERE id_refresh_token = @id_refresh_token
                 `);
 
