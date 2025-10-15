@@ -152,10 +152,10 @@ export const login = catchAsync(async (req, res) => {
             .input('id_usuario', sql.Int, usuario.id_usuario)
             .input('token', sql.NVarChar(sql.MAX), refreshToken)
             .input('fecha_expiracion', sql.DateTime, fechaExpiracion)
-            .input('estado', sql.Bit, 1)
+            .input('activo', sql.Bit, 1)
             .query(`
-                INSERT INTO tbRefreshTokens (id_usuario, token, fecha_expiracion, estado, fecha_creacion)
-                VALUES (@id_usuario, @token, @fecha_expiracion, @estado, GETDATE())
+                INSERT INTO tbRefreshTokens (id_usuario, token, fecha_expiracion, activo, fecha_creacion)
+                VALUES (@id_usuario, @token, @fecha_expiracion, @activo, GETDATE())
             `);
 
         // Retornar respuesta exitosa
