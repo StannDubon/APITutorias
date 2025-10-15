@@ -155,7 +155,7 @@ CREATE TABLE tbTutorias (
     CONSTRAINT FK_tutoria_usuario FOREIGN KEY (id_tutor) REFERENCES tbUsuarios(id_usuario),
     CONSTRAINT FK_tutoria_tipo_tutoria FOREIGN KEY (id_tipo_tutoria) REFERENCES tbTiposTutoria(id_tipo_tutoria),
     CONSTRAINT FK_tutoria_materiaCarrera FOREIGN KEY (id_materia_carrera) REFERENCES tbMateriasCarrera(id_materia_carrera),
-    CONSTRAINT FK_tutoria_horario_dia_semana FOREIGN KEY (id_horario_dia_semana) REFERENCES tbHorarioDiaSemana(id_horario_dia_semana)
+    CONSTRAINT FK_tutoria_horario_dia_semana FOREIGN KEY (id_horario_dia_semana) REFERENCES tbHorarioDiaSemanas(id_horario_dia_semana)
 );
 GO
 
