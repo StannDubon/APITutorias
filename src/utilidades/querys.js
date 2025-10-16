@@ -10,10 +10,10 @@ const tablasPermitidas = [
     "tbMaterias",
     "tbMateriasCarrera",
     "tbHorarios",
-    "tbDiaSemana",
+    "tbDiaSemanas",
     "tbHorarioDiaSemana",
     "tbTutorias",
-    "tbAsistencia",
+    "tbAsistencias",
     "tbRefreshTokens"
 ]
 
@@ -26,10 +26,10 @@ const camposId = {
     tbMaterias: "id_materia",
     tbMateriasCarrera: "id_materia_carrera",
     tbHorarios: "id_horario",
-    tbDiaSemana: "id_dia_semana",
+    tbDiaSemanas: "id_dia_semana",
     tbHorarioDiaSemana: "id_horario_dia_semana",
     tbTutorias: "id_tutoria",
-    tbAsistencia: "id_asistencia"
+    tbAsistencias: "id_asistencia"
 }
 
 
