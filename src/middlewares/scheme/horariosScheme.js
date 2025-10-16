@@ -1,10 +1,5 @@
 import Joi from "joi";
 
-export const Horarios = Joi.object({
-    hora_inicio: Joi.date().required(),
-    hora_final: Joi.date().required(),
-})
-
 export const DiasSemana = Joi.object({
     dia_semana: Joi.string().required(),
 })
