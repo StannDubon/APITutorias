@@ -4,14 +4,14 @@ import { getConnection } from '../db/conexion.js'
 const tablasPermitidas = [
     "tbNivelesUsuarios",
     "tbUsuarios",
-    "tbTiposTutorias",
-    "tbTiposCarreras",
+    "tbTiposTutoria",
+    "tbTiposCarrera",
     "tbCarreras",
     "tbMaterias",
     "tbMateriasCarrera",
     "tbHorarios",
     "tbDiaSemanas",
-    "tbHorarioDiaSemana",
+    "tbHorarioDiaSemanas",
     "tbTutorias",
     "tbAsistencias",
     "tbRefreshTokens"
@@ -20,14 +20,14 @@ const tablasPermitidas = [
 const camposId = {
     tbNivelesUsuarios: "id_nivel",
     tbUsuarios: "id_usuario",
-    tbTiposTutorias: "id_tipo_tutoria",
-    tbTiposCarreras: "id_tipo_carrera",
+    tbTiposTutoria: "id_tipo_tutoria",
+    tbTiposCarrera: "id_tipo_carrera",
     tbCarreras: "id_carrera",
     tbMaterias: "id_materia",
     tbMateriasCarrera: "id_materia_carrera",
     tbHorarios: "id_horario",
     tbDiaSemanas: "id_dia_semana",
-    tbHorarioDiaSemana: "id_horario_dia_semana",
+    tbHorarioDiaSemanas: "id_horario_dia_semana",
     tbTutorias: "id_tutoria",
     tbAsistencias: "id_asistencia"
 }
