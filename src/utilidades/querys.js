@@ -2,7 +2,7 @@ import sql from 'mssql'
 import { getConnection } from '../db/conexion.js'
 
 const tablasPermitidas = [
-    "tbNivelesUsuario",
+    "tbNivelesUsuarios",
     "tbUsuarios",
     "tbTiposTutorias",
     "tbTiposCarreras",
@@ -18,7 +18,7 @@ const tablasPermitidas = [
 ]
 
 const camposId = {
-    tbNivelesUsuario: "id_nivel",
+    tbNivelesUsuarios: "id_nivel",
     tbUsuarios: "id_usuario",
     tbTiposTutorias: "id_tipo_tutoria",
     tbTiposCarreras: "id_tipo_carrera",
