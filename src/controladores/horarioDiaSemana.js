@@ -5,7 +5,7 @@ const tabla = "tbHorarioDiaSemanas";
 export const getHorarioDiaSemana = catchAsync(async (req, res) => {
     try {
         const result = await todosDatos(tabla);
-        res.json(result)
+        res.json(result[0])
     } catch (error) {
         console.log(error)
         throw new AppError("Error al obtener los horarios de la semana", 500)
@@ -19,7 +19,7 @@ export const getHorarioDiaSemanaId = catchAsync(async (req, res) => {
         if (result.length === 0) {
             throw new AppError("Horario de la semana no encontrado", 404)
         }
-        res.json(result)
+        res.json(result[0])
     } catch (error) {
         console.log(error)
         throw new AppError("Error al obtener el horario de la semana", 500)
@@ -33,7 +33,7 @@ export const updateHorarioDiaSemana = catchAsync(async (req, res) => {
         if (result === 0) {
             throw new AppError("Horario de la semana no encontrado", 404)
         }
-        res.json(result)
+        res.json(result[0])
     } catch (error) {
         console.log(error)
         throw new AppError("Error al actualizar el horario de la semana", 500)
@@ -43,7 +43,7 @@ export const updateHorarioDiaSemana = catchAsync(async (req, res) => {
 export const insertHorarioDiaSemana = catchAsync(async (req, res) => {
     try {
         const result = await insertDato(tabla, req.body)
-        res.json(result)
+        res.json(result[0])
     } catch (error) {
         console.log(error)
         throw new AppError("Error al insertar el horario de la semana", 500)
@@ -57,7 +57,7 @@ export const deleteHorarioDiaSemana = catchAsync(async (req, res) => {
         if (result === 0) {
             throw new AppError("Horario de la semana no encontrado", 404)
         }
-        res.json(result)
+        res.json(result[0])
     } catch (error) {
         console.log(error)
         throw new AppError("Error al eliminar el horario de la semana", 500)
