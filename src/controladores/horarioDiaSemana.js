@@ -19,7 +19,7 @@ export const getHorarioDiaSemanaId = catchAsync(async (req, res) => {
         if (result.length === 0) {
             throw new AppError("Horario de la semana no encontrado", 404)
         }
-        res.json(result[0])
+        res.json(result)
     } catch (error) {
         console.log(error)
         throw new AppError("Error al obtener el horario de la semana", 500)
