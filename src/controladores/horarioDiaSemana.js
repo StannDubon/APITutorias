@@ -5,7 +5,7 @@ const tabla = "tbHorarioDiaSemanas";
 export const getHorarioDiaSemana = catchAsync(async (req, res) => {
     try {
         const result = await todosDatos(tabla);
-        res.json(result[0])
+        res.json(result)
     } catch (error) {
         console.log(error)
         throw new AppError("Error al obtener los horarios de la semana", 500)
