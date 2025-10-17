@@ -43,7 +43,7 @@ export const updateHorarioDiaSemana = catchAsync(async (req, res) => {
 export const insertHorarioDiaSemana = catchAsync(async (req, res) => {
     try {
         const result = await insertDato(tabla, req.body)
-        res.json(result[0])
+        res.json(result)
     } catch (error) {
         console.log(error)
         throw new AppError("Error al insertar el horario de la semana", 500)
