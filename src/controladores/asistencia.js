@@ -34,7 +34,7 @@ export const updateAsistencia = catchAsync(async (req, res) => {
         if (result === 0) {
             throw new AppError("Asistencia no encontrada", 404);
         }
-        res.json(result)
+        res.json({ message: "Asistenca actualizada exitosamente" })
     } catch (error) {
         console.log(error)
         throw new AppError("Error al actualizar la asistencia", 500)
@@ -48,7 +48,7 @@ export const deleteAsistencia = catchAsync(async (req, res) => {
         if (result === 0) {
             throw new AppError("Asistencia no encontrada", 404);
         }
-        res.json(result)
+        res.json({ message: "Asistenca eliminada exitosamente" })
     } catch (error) {
         console.log(error)
         throw new AppError("Error al eliminar la asistencia", 500)
@@ -58,7 +58,7 @@ export const deleteAsistencia = catchAsync(async (req, res) => {
 export const crearAsistencia = catchAsync(async (req, res) => {
     try {
         const result = await ejecutarProcedimiento(procedimiento, req.body)
-        res.json(result)
+        res.json({ message: "Asistenca creada exitosamente" })
     } catch (error) {
         console.log(error)
         throw new AppError("Error al crear la asistencia", 500)

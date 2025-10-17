@@ -33,7 +33,7 @@ export const updateTutoria = catchAsync(async (req, res) => {
         if (result === 0) {
             throw new AppError("Tutoria no encontrada", 404)
         }
-        res.json(result)
+        res.json({ message: "Tutoría actualizada exitosamente" })
     } catch (error) {
         console.log(error)
         throw new AppError("Error al actualizar la tutoria", 500)
@@ -43,7 +43,10 @@ export const updateTutoria = catchAsync(async (req, res) => {
 export const insertTutoria = catchAsync(async (req, res) => {
     try {
         const result = await insertDato(tabla, req.body)
-        res.json(result)
+        res.status(201).json({ 
+            message: "Tutoría creada exitosamente",
+            data: result 
+        })
     } catch (error) {
         console.log(error)
         throw new AppError("Error al insertar la tutoria", 500)
@@ -57,10 +60,9 @@ export const deleteTutoria = catchAsync(async (req, res) => {
         if (result === 0) {
             throw new AppError("Tutoria no encontrada", 404)
         }
-        res.json(result)
+        res.json({ message: "Tutoría eliminada exitosamente" })
     } catch (error) {
         console.log(error)
         throw new AppError("Error al eliminar la tutoria", 500)
     }
 });
-

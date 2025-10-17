@@ -33,7 +33,7 @@ export const updateHorarioDiaSemana = catchAsync(async (req, res) => {
         if (result === 0) {
             throw new AppError("Horario de la semana no encontrado", 404)
         }
-        res.json(result)
+        res.json({ message: "Horario de la semana actualizado exitosamente" })
     } catch (error) {
         console.log(error)
         throw new AppError("Error al actualizar el horario de la semana", 500)
@@ -43,7 +43,10 @@ export const updateHorarioDiaSemana = catchAsync(async (req, res) => {
 export const insertHorarioDiaSemana = catchAsync(async (req, res) => {
     try {
         const result = await insertDato(tabla, req.body)
-        res.json(result)
+        res.status(201).json({ 
+            message: "Horario de la semana creado exitosamente",
+            data: result 
+        })
     } catch (error) {
         console.log(error)
         throw new AppError("Error al insertar el horario de la semana", 500)
@@ -57,7 +60,7 @@ export const deleteHorarioDiaSemana = catchAsync(async (req, res) => {
         if (result === 0) {
             throw new AppError("Horario de la semana no encontrado", 404)
         }
-        res.json(result)
+        res.json({ message: "Horario de la semana eliminado exitosamente" })
     } catch (error) {
         console.log(error)
         throw new AppError("Error al eliminar el horario de la semana", 500)

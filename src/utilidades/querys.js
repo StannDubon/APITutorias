@@ -25,6 +25,7 @@ const procedimientos = [
     "procd_EliminarMateriaDeCarrera",
     "procd_CrearAsistencia",
 ]
+
 const camposId = {
     tbNivelesUsuarios: "id_nivel",
     tbUsuarios: "id_usuario",
@@ -40,13 +41,12 @@ const camposId = {
     tbAsistencias: "id_asistencia"
 }
 
-
 export const todosDatos = async (tabla) => {
     const pool = await sql.connect(getConnection())
     if (!tablasPermitidas.includes(tabla)) {
         throw new Error("Tabla no permitida")
     }
-    const result = await pool.request().query(`SELECT * FROM  ${tabla}`,)
+    const result = await pool.request().query(`SELECT * FROM ${tabla}`)
     return result.recordset
 }
 
@@ -63,7 +63,6 @@ export const unSoloDato = async (tabla, id) => {
         .input("id", sql.Int, id)
         .query(`SELECT * FROM ${tabla} WHERE ${campoId} = @id`)
     return result.recordset
-
 }
 
 export const updateDato = async (tabla, id, campos) => {
@@ -85,7 +84,8 @@ export const updateDato = async (tabla, id, campos) => {
     })
 
     const result = await request.query(`UPDATE ${tabla} SET ${setString} WHERE ${campoId} = @id`)
-    return result.recordset
+    
+    return result.rowsAffected[0]
 }
 
 export const insertDato = async (tabla, campos) => {
@@ -107,12 +107,12 @@ export const insertDato = async (tabla, campos) => {
     })
 
     const result = await request.query(`
-    INSERT INTO ${tabla} (${columnas}) 
-    OUTPUT INSERTED.* 
-    VALUES (${valores})
-`)
-    return result.recordset[0]
+        INSERT INTO ${tabla} (${columnas}) 
+        OUTPUT INSERTED.* 
+        VALUES (${valores})
+    `)
 
+    return result.recordset[0]
 }
 
 export const deleteDato = async (tabla, id) => {
@@ -120,12 +120,14 @@ export const deleteDato = async (tabla, id) => {
         throw new Error("Tabla no permitida")
     }
     if (!id) throw new Error("Id no proporcionado")
+    
     const pool = await sql.connect(getConnection())
     const campoId = camposId[tabla]
     const result = await pool.request()
         .input("id", sql.Int, id)
         .query(`DELETE FROM ${tabla} WHERE ${campoId} = @id`)
-    return result.recordset
+
+    return result.rowsAffected[0]
 }
 
 export const ejecutarProcedimiento = async (procedimiento, campos) => {
@@ -137,7 +139,6 @@ export const ejecutarProcedimiento = async (procedimiento, campos) => {
     const request = pool.request()
     const keys = Object.keys(campos)
 
-    // Validar nombres de parámetros
     keys.forEach(k => {
         if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(k)) {
             throw new Error(`Nombre de parámetro inválido: ${k}`)
@@ -148,3 +149,4 @@ export const ejecutarProcedimiento = async (procedimiento, campos) => {
     const result = await request.execute(procedimiento)
     return result.recordset
 }
+
