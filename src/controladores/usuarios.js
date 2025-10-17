@@ -5,11 +5,22 @@ import {getConnection} from "../db/conexion.js"
 import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato } from "../utilidades/querys.js"
 
 const tabla = "tbUsuarios";
+const vista = "vw_UsuariosBasicos"
 
 export const getUsuarios = catchAsync(async (req, res) => {
     const result = await todosDatos(tabla);
     res.json(result);
 });
+
+export const getVistaUsuariosBasicos = catchAsync(async (req, res) => {
+    try {
+        const result = await todosDatos(vista);
+        res.json(result)
+    } catch (error) {
+        console.log(error)
+        throw new AppError("Error al obtener los usuarios basicos", 500)
+    }
+})
 
 export const getUsuarioById = catchAsync(async (req, res) => {
     const { id } = req.params;

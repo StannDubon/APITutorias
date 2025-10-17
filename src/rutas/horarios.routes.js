@@ -1,5 +1,5 @@
 import { Router } from "express";
-import {getHoraio,getHoraioId,updateHorario,insertHorario,deleteHorario} from "../controladores/horarios.js"
+import {getHoraio,getHoraioId,updateHorario,insertHorario,deleteHorario,getVistaHoraio} from "../controladores/horarios.js"
 import { validate } from "../middlewares/validacion.js";
 import {verificarToken, verificarNivel} from "../middlewares/authMiddleware.js"
 const router = Router() 
@@ -14,6 +14,7 @@ router.post("/POSThorarios", verificarToken, verificarNivel(['admin']), insertHo
 
 router.delete("/DELETEhorarios/:id", verificarToken, verificarNivel(['admin']), deleteHorario)
 
+router.get("/getVistaHorarios", verificarToken, verificarNivel(['admin', 'profesor']), getVistaHoraio)
 
 export default router;
 

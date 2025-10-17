@@ -1,13 +1,23 @@
 import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato } from "../utilidades/querys.js"
 import {catchAsync, AppError} from "../middlewares/errorHandler.js"
 const tabla = "tbHorarios";
-
+const vista = "vw_HorariosCompletos"
 // Controladores para manejar los horarios 
 
 // Obtener todos los horarios
 export const getHoraio = catchAsync(async (req, res) => {
     try {
         const result = await todosDatos(tabla);
+        res.json(result)
+    } catch (error) {
+        console.log(error)
+        throw new AppError("Error al obtener los horarios", 500)
+    }
+})
+
+export const getVistaHoraio = catchAsync(async (req, res) => {
+    try {
+        const result = await todosDatos(vista);
         res.json(result)
     } catch (error) {
         console.log(error)

@@ -1,6 +1,7 @@
-import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato } from "../utilidades/querys.js"
+import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato, ejecutarProcedimiento} from "../utilidades/querys.js"
 import { catchAsync, AppError } from "../middlewares/errorHandler.js"
 const tabla = "tbAsistencias";
+const procedimiento = "procd_CrearAsistencia"
 
 export const getAsistencia = catchAsync(async (req, res) => {
     try {
@@ -40,16 +41,6 @@ export const updateAsistencia = catchAsync(async (req, res) => {
     }
 });
 
-export const insertAsistencia = catchAsync(async (req, res) => {
-    try {
-        const result = await insertDato(tabla, req.body)
-        res.json(result)
-    } catch (error) {
-        console.log(error)
-        throw new AppError("Error al insertar la asistencia", 500)
-    }
-});
-
 export const deleteAsistencia = catchAsync(async (req, res) => {
     try {
         const { id } = req.params
@@ -61,5 +52,15 @@ export const deleteAsistencia = catchAsync(async (req, res) => {
     } catch (error) {
         console.log(error)
         throw new AppError("Error al eliminar la asistencia", 500)
+    }
+});
+
+export const crearAsistencia = catchAsync(async (req, res) => {
+    try {
+        const result = await ejecutarProcedimiento(procedimiento, req.body)
+        res.json(result)
+    } catch (error) {
+        console.log(error)
+        throw new AppError("Error al crear la asistencia", 500)
     }
 });

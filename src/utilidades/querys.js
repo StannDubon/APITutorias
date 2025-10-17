@@ -14,9 +14,17 @@ const tablasPermitidas = [
     "tbHorarioDiaSemanas",
     "tbTutorias",
     "tbAsistencias",
-    "tbRefreshTokens"
+    "tbRefreshTokens",
+    "vw_MateriasConCarrera",
+    "vw_UsuariosBasicos",
+    "vw_HorariosCompletos"
 ]
 
+const procedimientos = [
+    "procd_AgregarMateriaACarrera",
+    "procd_EliminarMateriaDeCarrera",
+    "procd_CrearAsistencia",
+]
 const camposId = {
     tbNivelesUsuarios: "id_nivel",
     tbUsuarios: "id_usuario",
@@ -55,7 +63,7 @@ export const unSoloDato = async (tabla, id) => {
         .input("id", sql.Int, id)
         .query(`SELECT * FROM ${tabla} WHERE ${campoId} = @id`)
     return result.recordset
-    
+
 }
 
 export const updateDato = async (tabla, id, campos) => {
@@ -63,12 +71,12 @@ export const updateDato = async (tabla, id, campos) => {
         throw new Error("Tabla no permitida")
     }
     if (!id) throw new Error("Id no proporcionado")
-    
+
     const pool = await sql.connect(getConnection())
     const campoId = camposId[tabla]
 
-    const keys = Object.keys(campos) 
-    const setString = keys.map(k => `${k} = @${k}`).join(", ") 
+    const keys = Object.keys(campos)
+    const setString = keys.map(k => `${k} = @${k}`).join(", ")
 
     const request = pool.request()
     request.input("id", sql.Int, id)
@@ -77,26 +85,30 @@ export const updateDato = async (tabla, id, campos) => {
     })
 
     const result = await request.query(`UPDATE ${tabla} SET ${setString} WHERE ${campoId} = @id`)
-    return result.rowsAffected[0] 
+    return result.recordset
 }
 
 export const insertDato = async (tabla, campos) => {
-    if(!tablasPermitidas.includes(tabla)) {
+    if (!tablasPermitidas.includes(tabla)) {
         throw new Error("Tabla no permitida")
     }
     const pool = await sql.connect(getConnection())
 
-    const keys = Object.keys(campos) 
-    const columnas = keys.join(", ")   
-    const valores = keys.map(k => `@${k}`).join(", ") 
+    const keys = Object.keys(campos)
+    const columnas = keys.join(", ")
+    const valores = keys.map(k => `@${k}`).join(", ")
 
     const request = pool.request()
     keys.forEach(k => {
+        if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(k)) {
+            throw new Error(`Nombre de parámetro inválido: ${k}`)
+        }
         request.input(k, typeof campos[k] === "number" ? sql.Int : sql.NVarChar, campos[k])
     })
 
     const result = await request.query(`INSERT INTO ${tabla} (${columnas}) VALUES (${valores})`)
-    return result.rowsAffected[0] 
+    return result.recordset
+
 }
 
 export const deleteDato = async (tabla, id) => {
@@ -109,5 +121,26 @@ export const deleteDato = async (tabla, id) => {
     const result = await pool.request()
         .input("id", sql.Int, id)
         .query(`DELETE FROM ${tabla} WHERE ${campoId} = @id`)
-    return result.rowsAffected[0] 
+    return result.recordset
+}
+
+export const ejecutarProcedimiento = async (procedimiento, campos) => {
+    if (!procedimientos.includes(procedimiento)) {
+        throw new Error("Procedimiento no permitido")
+    }
+
+    const pool = await sql.connect(getConnection())
+    const request = pool.request()
+    const keys = Object.keys(campos)
+
+    // Validar nombres de parámetros
+    keys.forEach(k => {
+        if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(k)) {
+            throw new Error(`Nombre de parámetro inválido: ${k}`)
+        }
+        request.input(k, typeof campos[k] === "number" ? sql.Int : sql.NVarChar, campos[k])
+    })
+
+    const result = await request.execute(procedimiento)
+    return result.recordset
 }
