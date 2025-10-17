@@ -106,8 +106,12 @@ export const insertDato = async (tabla, campos) => {
         request.input(k, typeof campos[k] === "number" ? sql.Int : sql.NVarChar, campos[k])
     })
 
-    const result = await request.query(`INSERT INTO ${tabla} (${columnas}) VALUES (${valores})`)
-    return result.recordset
+    const result = await request.query(`
+    INSERT INTO ${tabla} (${columnas}) 
+    OUTPUT INSERTED.* 
+    VALUES (${valores})
+`)
+    return result.recordset[0]
 
 }
 

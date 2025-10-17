@@ -5,9 +5,9 @@ import {crearTipoTutoria} from "../middlewares/scheme/tutoriasScheme.js"
 import {verificarToken, verificarNivel} from "../middlewares/authMiddleware.js"
 const router = Router()
 
-router.get("/tiposTutoria", verificarToken, verificarNivel(['admin']), getTiposTutoria)
+router.get("/tiposTutoria", verificarToken, verificarNivel(['admin', 'profesor']), getTiposTutoria)
 
-router.get("/tipoTutoria/:id", verificarToken, verificarNivel(['admin']), getTipoTutoriabyId)
+router.get("/tipoTutoria/:id", verificarToken, verificarNivel(['admin', 'profesor']), getTipoTutoriabyId)
 
 router.post("/newTipoTutoria", verificarToken, verificarNivel(['admin']), validate(crearTipoTutoria), addTipoTutoria)
 
