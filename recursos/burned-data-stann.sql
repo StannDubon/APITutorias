@@ -1,3 +1,6 @@
+use tutoriasUDB
+GO
+
 -- Insertar datos en tbNivelesUsuarios
 INSERT INTO tbNivelesUsuarios (nivel) VALUES 
 ('admin'),
