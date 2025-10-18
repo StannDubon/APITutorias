@@ -9,6 +9,7 @@ router.get("/getMateriaCarrera", verificarToken, verificarNivel(['admin', 'profe
 router.get("/getMateriaCarreraById/:id", verificarToken, verificarNivel(['admin', 'profesor']), getMateriaCarreraById)
 router.get("/getVistaMateriaCarrera", verificarToken, verificarNivel(['admin', 'profesor']), getVistaMateriaCarrera)
 router.put("/updateMateriaCarrera/:id", verificarToken, verificarNivel(['admin']), validate(MateriaCarrera), updateMateriaCarrera)
+
 router.post("/procedimientoAgregarMateriaCarrera", verificarToken, verificarNivel(['admin']), procedimientoAgregarMateriaCarrera)
 router.post("/procedimientoEliminarMateriaDeCarrera", verificarToken, verificarNivel(['admin']) ,procedimientoEliminarMateriaDeCarrera)
 
