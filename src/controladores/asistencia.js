@@ -2,6 +2,7 @@ import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato, ejecutarPro
 import { catchAsync, AppError } from "../middlewares/errorHandler.js"
 const tabla = "tbAsistencias";
 const vista1 = "vw_AsistenciasSimplificadas"
+const vista2 = "vw_AsistenciasEstudiante"
 const procedimiento = "procd_CrearAsistencia"
 
 export const getAsistencia = catchAsync(async (req, res) => {
@@ -32,7 +33,22 @@ export const getAsistenciasByTutoria = catchAsync(async (req,res) => {
     try {
         const {id} = req.params
         const result = await ejecutarVista(vista1, {
-            id_tutoria: parseInt(id)
+            id_tutoria: parseInt(id),
+            order_by_fecha: 'DESC'
+        })
+        res.json(result)
+    } catch (error) {
+        console.log(error)
+        throw new AppError("Error al obtener la carrera", 500)
+    }
+});
+
+export const getAsistenciasByEstudiante = catchAsync(async (req,res) => {
+    try {
+        const {id} = req.params
+        const result = await ejecutarVista(vista2, {
+            id_usuario: parseInt(id),
+            order_by_fecha_asistencia: 'DESC'
         })
         res.json(result)
     } catch (error) {

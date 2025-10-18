@@ -1,10 +1,21 @@
 import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato } from "../utilidades/querys.js"
 import {catchAsync, AppError} from "../middlewares/errorHandler.js"
 const tabla = "tbHorarioDiaSemanas";
+const vista1 = "vw_PanoramaTutoria";
 
 export const getHorarioDiaSemana = catchAsync(async (req, res) => {
     try {
         const result = await todosDatos(tabla);
+        res.json(result)
+    } catch (error) {
+        console.log(error)
+        throw new AppError("Error al obtener los horarios de la semana", 500)
+    }
+})
+
+export const getAllAsistenciasInfo = catchAsync(async (req, res) => {
+    try {
+        const result = await todosDatos(vista1);
         res.json(result)
     } catch (error) {
         console.log(error)

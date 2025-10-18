@@ -1,5 +1,5 @@
 import {Router } from "express";
-import {getAsistencia,getAsistenciaById,updateAsistencia,crearAsistencia,deleteAsistencia, getAsistenciasByTutoria} from "../controladores/asistencia.js"
+import {getAsistencia,getAsistenciaById,updateAsistencia,crearAsistencia,deleteAsistencia, getAsistenciasByTutoria, getAsistenciasByEstudiante} from "../controladores/asistencia.js"
 import { asistenciaTutoria } from "../middlewares/scheme/tutoriasScheme.js";
 import { validate } from "../middlewares/validacion.js";
 import {verificarToken, verificarNivel} from "../middlewares/authMiddleware.js"
@@ -12,5 +12,6 @@ router.post("/POSTasistencia", verificarToken, verificarNivel(['admin', 'profeso
 router.delete("/DELETEasistencia/:id", verificarToken, verificarNivel(['admin', 'profesor']), deleteAsistencia)
 
 router.get("/getAsistenciasByTutoria/:id", verificarToken, verificarNivel(['admin', 'profesor']), getAsistenciasByTutoria)
+router.get("/getAsistenciasByEstudiante/:id", verificarToken, verificarNivel(['admin', 'profesor', 'alumno']), getAsistenciasByEstudiante)
 
 export default router

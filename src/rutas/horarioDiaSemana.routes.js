@@ -1,5 +1,5 @@
 import {Router } from "express";
-import {getHorarioDiaSemana,getHorarioDiaSemanaId,updateHorarioDiaSemana,insertHorarioDiaSemana,deleteHorarioDiaSemana} from "../controladores/horarioDiaSemana.js"
+import {getHorarioDiaSemana,getHorarioDiaSemanaId,updateHorarioDiaSemana,insertHorarioDiaSemana,deleteHorarioDiaSemana, getAllAsistenciasInfo} from "../controladores/horarioDiaSemana.js"
 import {verificarToken, verificarNivel} from "../middlewares/authMiddleware.js"
 const router = Router()
 
@@ -9,4 +9,5 @@ router.put("/PUThorarioDiaSemana/:id", verificarToken, verificarNivel(['admin', 
 router.post("/POSThorarioDiaSemana", verificarToken, verificarNivel(['admin', 'profesor']), insertHorarioDiaSemana)
 router.delete("/DELETEhorarioDiaSemana/:id", verificarToken, verificarNivel(['admin', 'profesor']), deleteHorarioDiaSemana)
 
+router.get("/getAllAsistenciasInfo", verificarToken, verificarNivel(['admin', 'profesor', 'alumno']), getAllAsistenciasInfo)
 export default router
