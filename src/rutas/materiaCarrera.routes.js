@@ -1,5 +1,5 @@
 import {Router} from "express";
-import {getMateriaCarrera, getMateriaCarreraById, updateMateriaCarrera, procedimientoAgregarMateriaCarrera, procedimientoEliminarMateriaDeCarrera, getVistaMateriaCarrera} from "../controladores/materias_carrera.js"
+import {getMateriaCarrera, getMateriaCarreraById, updateMateriaCarrera, procedimientoAgregarMateriaCarrera, procedimientoEliminarMateriaDeCarrera, getVistaMateriaCarrera, procedimientoEliminarMateriaDeCarreraConCascada} from "../controladores/materias_carrera.js"
 import { validate } from "../middlewares/validacion.js";
 import { MateriaCarrera } from "../middlewares/scheme/materiasScheme.js";
 import {verificarToken, verificarNivel} from "../middlewares/authMiddleware.js"
@@ -11,6 +11,6 @@ router.get("/getVistaMateriaCarrera", verificarToken, verificarNivel(['admin', '
 router.put("/updateMateriaCarrera/:id", verificarToken, verificarNivel(['admin']), validate(MateriaCarrera), updateMateriaCarrera)
 
 router.post("/procedimientoAgregarMateriaCarrera", verificarToken, verificarNivel(['admin']), procedimientoAgregarMateriaCarrera)
-router.post("/procedimientoEliminarMateriaDeCarrera", verificarToken, verificarNivel(['admin']) ,procedimientoEliminarMateriaDeCarrera)
+router.post("/procedimientoEliminarMateriaDeCarrera", verificarToken, verificarNivel(['admin']) ,procedimientoEliminarMateriaDeCarreraConCascada)
 
 export default router

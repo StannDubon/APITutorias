@@ -2,10 +2,12 @@ import { catchAsync, AppError } from "../middlewares/errorHandler.js";
 import bcrypt from "bcrypt";
 import sql from "mssql";
 import {getConnection} from "../db/conexion.js"
-import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato } from "../utilidades/querys.js"
+import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato, ejecutarVista } from "../utilidades/querys.js"
 
 const tabla = "tbUsuarios";
 const vista = "vw_UsuariosBasicos"
+const vista1 = "vw_TutoriasFormateadas";
+const vista2 = "vw_UsuariosAcademicos";
 
 export const getUsuarios = catchAsync(async (req, res) => {
     const result = await todosDatos(tabla);
@@ -21,6 +23,29 @@ export const getVistaUsuariosBasicos = catchAsync(async (req, res) => {
         throw new AppError("Error al obtener los usuarios basicos", 500)
     }
 })
+
+export const getVistaUsuariosAcademicos = catchAsync(async (req, res) => {
+    try {
+        const result = await todosDatos(vista2);
+        res.json(result)
+    } catch (error) {
+        console.log(error)
+        throw new AppError("Error al obtener los usuarios basicos", 500)
+    }
+})
+
+export const getVistaTutoriaUsuario = catchAsync(async (req,res) => {
+    try {
+        const {id} = req.params
+        const result = await ejecutarVista(vista1, {
+            id_tutor: parseInt(id)
+        })
+        res.json(result)
+    } catch (error) {
+        console.log(error)
+        throw new AppError("Error al obtener la carrera", 500)
+    }
+});
 
 export const getUsuarioById = catchAsync(async (req, res) => {
     const { id } = req.params;

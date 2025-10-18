@@ -18,7 +18,9 @@ const tablasPermitidas = [
     "vw_MateriasConCarrera",
     "vw_UsuariosBasicos",
     "vw_HorariosCompletos",
-    "vw_MateriasConIndicadorCarrera"
+    "vw_MateriasConIndicadorCarrera",
+    "vw_TutoriasFormateadas",
+    "vw_UsuariosAcademicos"
 ]
 
 const procedimientos = [
