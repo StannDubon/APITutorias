@@ -16,7 +16,7 @@ export const actualizarUsuario = Joi.object({
     carnet: Joi.string().required(),
     apellido: Joi.string().required(),
     correo: Joi.string().email().required(),
-    contrasena: Joi.string().required(),
+    clave: Joi.string().optional().allow(''),
     estado: Joi.number().required(), //Se puso number por que no es un booleano en si, es un TinyInt
 });
 
