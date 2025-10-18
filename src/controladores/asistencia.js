@@ -57,10 +57,48 @@ export const deleteAsistencia = catchAsync(async (req, res) => {
 
 export const crearAsistencia = catchAsync(async (req, res) => {
     try {
-        const result = await ejecutarProcedimiento(procedimiento, req.body)
-        res.json({ message: "Asistenca creada exitosamente" })
+        const { id_usuario, id_tutoria, rendimiento_aprendizaje, rendimiento_dedicacion } = req.body;
+
+        if (!id_usuario || !id_tutoria || rendimiento_aprendizaje === undefined || rendimiento_dedicacion === undefined) {
+            throw new AppError("Todos los campos son requeridos: id_usuario, id_tutoria, rendimiento_aprendizaje, rendimiento_dedicacion", 400);
+        }
+
+        if (isNaN(parseInt(id_usuario)) || isNaN(parseInt(id_tutoria))) {
+            throw new AppError("id_usuario e id_tutoria deben ser números válidos", 400);
+        }
+
+        if (rendimiento_aprendizaje < 0 || rendimiento_aprendizaje > 100) {
+            throw new AppError("El rendimiento_aprendizaje debe estar entre 0 y 100", 400);
+        }
+
+        if (rendimiento_dedicacion < 0 || rendimiento_dedicacion > 100) {
+            throw new AppError("El rendimiento_dedicacion debe estar entre 0 y 100", 400);
+        }
+
+        const datosAsistencia = {
+            id_usuario: parseInt(id_usuario),
+            id_tutoria: parseInt(id_tutoria),
+            rendimiento_aprendizaje: parseInt(rendimiento_aprendizaje),
+            rendimiento_dedicacion: parseInt(rendimiento_dedicacion)
+        };
+
+        const result = await ejecutarProcedimiento('procd_CrearAsistencia', datosAsistencia);
+        
+        if (result && result.length > 0 && result[0].Resultado === 0) {
+            throw new AppError(result[0].Mensaje || "Error al crear la asistencia", 400);
+        }
+
+        res.json({ 
+            status: "success",
+            message: "Asistencia creada exitosamente",
+            data: result[0] // Incluir los datos retornados por el procedimiento
+        });
+        
     } catch (error) {
-        console.log(error)
-        throw new AppError("Error al crear la asistencia", 500)
+        console.log(error);
+        if (error instanceof AppError) {
+            throw error;
+        }
+        throw new AppError("Error al crear la asistencia", 500);
     }
 });
