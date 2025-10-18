@@ -256,15 +256,38 @@ BEGIN
             RETURN;
         END
         
-        -- Eliminar la relación
+        BEGIN TRANSACTION;
+        
+        -- Obtener el id_materia_carrera para usar en las eliminaciones
+        DECLARE @id_materia_carrera INT;
+        SELECT @id_materia_carrera = id_materia_carrera 
+        FROM tbMateriasCarrera 
+        WHERE id_carrera = @id_carrera AND id_materia = @id_materia;
+        
+        -- 1. Primero eliminar las asistencias relacionadas con las tutorías de esta materia-carrera
+        DELETE a 
+        FROM tbAsistencias a
+        INNER JOIN tbTutorias t ON a.id_tutoria = t.id_tutoria
+        WHERE t.id_materia_carrera = @id_materia_carrera;
+        
+        -- 2. Luego eliminar las tutorías que dependen de esta relación materia-carrera
+        DELETE FROM tbTutorias 
+        WHERE id_materia_carrera = @id_materia_carrera;
+        
+        -- 3. Finalmente eliminar la relación materia-carrera
         DELETE FROM tbMateriasCarrera 
         WHERE id_carrera = @id_carrera AND id_materia = @id_materia;
         
+        COMMIT TRANSACTION;
+        
         SELECT 1 AS Resultado, 
-               'Materia eliminada correctamente de la carrera' AS Mensaje;
+               'Materia eliminada correctamente de la carrera (incluyendo tutorías y asistencias relacionadas)' AS Mensaje;
                
     END TRY
     BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+            
         SELECT 0 AS Resultado, 
                ERROR_MESSAGE() AS Mensaje;
     END CATCH
@@ -459,4 +482,258 @@ FROM tbAsistencias a
     INNER JOIN tbHorarioDiaSemanas hds ON t.id_horario_dia_semana = hds.id_horario_dia_semana
     INNER JOIN tbHorarios h ON hds.id_horario = h.id_horario
     INNER JOIN tbDiaSemanas ds ON hds.id_dia = ds.id_dia_semana;
+GO
+
+CREATE OR ALTER VIEW vwTutoriasCompletas AS
+SELECT 
+    t.id_tutoria,
+    t.id_tutor,  -- Agregado el ID del tutor
+    CONCAT(
+        m.nombre_materia, 
+        ' - ', 
+        ds.dia_semana, 
+        ' ', 
+        FORMAT(CAST(h.hora_inicio AS TIME), N'hh\:mm') , 
+        ' a ', 
+        FORMAT(CAST(h.hora_final AS TIME), N'hh\:mm')
+    ) AS descripcion_tutoria,
+    m.nombre_materia AS materia_tutoria,
+    ds.dia_semana AS dia_tutoria,
+    FORMAT(CAST(h.hora_inicio AS TIME), N'hh\:mm') AS hora_inicio_formateada,
+    FORMAT(CAST(h.hora_final AS TIME), N'hh\:mm') AS hora_final_formateada,
+    CONCAT(FORMAT(CAST(h.hora_inicio AS TIME), N'hh\:mm'), ' a ', FORMAT(CAST(h.hora_final AS TIME), N'hh\:mm')) AS horario_formateado,
+    t.aula_tutoria,
+    tt.tipo_tutoria,
+    CONCAT(u.nombre, ' ', u.apellido) AS nombre_tutor,
+    c.nombre_carrera
+FROM tbTutorias t
+INNER JOIN tbMateriasCarrera mc ON t.id_materia_carrera = mc.id_materia_carrera
+INNER JOIN tbMaterias m ON mc.id_materia = m.id_materia
+INNER JOIN tbCarreras c ON mc.id_carrera = c.id_carrera
+INNER JOIN tbHorarioDiaSemanas hds ON t.id_horario_dia_semana = hds.id_horario_dia_semana
+INNER JOIN tbHorarios h ON hds.id_horario = h.id_horario
+INNER JOIN tbDiaSemanas ds ON hds.id_dia = ds.id_dia_semana
+INNER JOIN tbTiposTutoria tt ON t.id_tipo_tutoria = tt.id_tipo_tutoria
+INNER JOIN tbUsuarios u ON t.id_tutor = u.id_usuario;
+GO
+
+CREATE OR ALTER VIEW vw_TutoriasFormateadas AS
+SELECT 
+    t.id_tutoria,
+    t.id_tutor,  -- ID del tutor agregado
+    CONCAT(
+        m.nombre_materia, 
+        ' - ', 
+        t.aula_tutoria, 
+        ' - ',
+        ds.dia_semana, 
+        ' ',
+        FORMAT(CAST(h.hora_inicio AS TIME), N'hh\:mm'), 
+        ' a ', 
+        FORMAT(CAST(h.hora_final AS TIME), N'hh\:mm')
+    ) AS descripcion_tutoria,
+    m.nombre_materia,
+    t.aula_tutoria AS salon,
+    ds.dia_semana,
+    FORMAT(CAST(h.hora_inicio AS TIME), N'hh\:mm') AS hora_inicio,
+    FORMAT(CAST(h.hora_final AS TIME), N'hh\:mm') AS hora_final,
+    CONCAT(FORMAT(CAST(h.hora_inicio AS TIME), N'hh\:mm'), ' a ', FORMAT(CAST(h.hora_final AS TIME), N'hh\:mm')) AS horario_formateado,
+    tt.tipo_tutoria,
+    CONCAT(u.nombre, ' ', u.apellido) AS nombre_tutor,
+    c.nombre_carrera,
+    t.activo
+FROM tbTutorias t
+INNER JOIN tbMateriasCarrera mc ON t.id_materia_carrera = mc.id_materia_carrera
+INNER JOIN tbMaterias m ON mc.id_materia = m.id_materia
+INNER JOIN tbCarreras c ON mc.id_carrera = c.id_carrera
+INNER JOIN tbHorarioDiaSemanas hds ON t.id_horario_dia_semana = hds.id_horario_dia_semana
+INNER JOIN tbHorarios h ON hds.id_horario = h.id_horario
+INNER JOIN tbDiaSemanas ds ON hds.id_dia = ds.id_dia_semana
+INNER JOIN tbTiposTutoria tt ON t.id_tipo_tutoria = tt.id_tipo_tutoria
+INNER JOIN tbUsuarios u ON t.id_tutor = u.id_usuario;
+GO
+
+CREATE OR ALTER VIEW vw_UsuariosAcademicos AS
+SELECT 
+    u.id_usuario,
+    u.carnet,
+    CONCAT(u.nombre, ' ', u.apellido) AS nombre_completo,
+    u.estado,
+    n.nivel
+FROM tbUsuarios u
+INNER JOIN tbNivelesUsuarios n ON u.id_nivel = n.id_nivel
+WHERE n.nivel IN ('alumno', 'estudiante', 'profesor')
+    AND u.estado = 1;  -- Solo usuarios activos
+GO
+
+CREATE OR ALTER VIEW vw_AsistenciasSimplificadas AS
+SELECT 
+    a.id_asistencia,
+    CONCAT(u.nombre, ' ', u.apellido) AS nombre,
+    
+    -- Fecha formateada como DD/MM/AAAA
+    CASE 
+        WHEN a.fecha_asistencia IS NOT NULL THEN
+            RIGHT('0' + CAST(DAY(a.fecha_asistencia) AS VARCHAR(2)), 2) + '/' + 
+            RIGHT('0' + CAST(MONTH(a.fecha_asistencia) AS VARCHAR(2)), 2) + '/' + 
+            CAST(YEAR(a.fecha_asistencia) AS VARCHAR(4))
+        ELSE NULL 
+    END AS fecha,
+    
+    -- Hora formateada en AM/PM
+    CASE 
+        WHEN a.fecha_asistencia IS NOT NULL THEN
+            CASE 
+                WHEN DATEPART(HOUR, a.fecha_asistencia) = 0 THEN '12:' + RIGHT('0' + CAST(DATEPART(MINUTE, a.fecha_asistencia) AS VARCHAR(2)), 2) + ' AM'
+                WHEN DATEPART(HOUR, a.fecha_asistencia) < 12 THEN RIGHT('0' + CAST(DATEPART(HOUR, a.fecha_asistencia) AS VARCHAR(2)), 2) + ':' + RIGHT('0' + CAST(DATEPART(MINUTE, a.fecha_asistencia) AS VARCHAR(2)), 2) + ' AM'
+                WHEN DATEPART(HOUR, a.fecha_asistencia) = 12 THEN '12:' + RIGHT('0' + CAST(DATEPART(MINUTE, a.fecha_asistencia) AS VARCHAR(2)), 2) + ' PM'
+                ELSE RIGHT('0' + CAST(DATEPART(HOUR, a.fecha_asistencia) - 12 AS VARCHAR(2)), 2) + ':' + RIGHT('0' + CAST(DATEPART(MINUTE, a.fecha_asistencia) AS VARCHAR(2)), 2) + ' PM'
+            END
+        ELSE NULL 
+    END AS hora,
+    
+    u.carnet AS carnet,
+    a.id_tutoria
+FROM tbAsistencias a
+INNER JOIN tbUsuarios u ON a.id_usuario = u.id_usuario;
+GO
+
+-- Falta por añadir
+
+CREATE OR ALTER VIEW vw_AsistenciasEstudiante AS
+SELECT 
+    a.id_asistencia,
+    a.id_usuario,
+    
+    -- Información de la tutoría asistida
+    t.id_tutoria,
+    m.nombre_materia,
+    t.aula_tutoria,
+    
+    -- Información del tutor
+    tutor.id_usuario AS id_tutor,
+    CONCAT(tutor.nombre, ' ', tutor.apellido) AS nombre_tutor,
+    tutor.carnet AS carnet_tutor,
+    tutor.correo AS correo_tutor,
+    
+    -- Información del tipo de tutoría
+    tt.tipo_tutoria,
+    
+    -- Información de la carrera
+    c.nombre_carrera,
+    
+    -- Información del horario
+    ds.dia_semana,
+    CONCAT(FORMAT(CAST(h.hora_inicio AS TIME), N'hh\:mm'), ' a ', FORMAT(CAST(h.hora_final AS TIME), N'hh\:mm')) AS horario_tutoria,
+    
+    -- Fecha y hora de asistencia formateadas
+    CASE 
+        WHEN a.fecha_asistencia IS NOT NULL THEN
+            RIGHT('0' + CAST(DAY(a.fecha_asistencia) AS VARCHAR(2)), 2) + '/' + 
+            RIGHT('0' + CAST(MONTH(a.fecha_asistencia) AS VARCHAR(2)), 2) + '/' + 
+            CAST(YEAR(a.fecha_asistencia) AS VARCHAR(4))
+        ELSE NULL 
+    END AS fecha_asistencia,
+    
+    -- Hora de asistencia formateada en AM/PM
+    CASE 
+        WHEN a.fecha_asistencia IS NOT NULL THEN
+            CASE 
+                WHEN DATEPART(HOUR, a.fecha_asistencia) = 0 THEN '12:' + RIGHT('0' + CAST(DATEPART(MINUTE, a.fecha_asistencia) AS VARCHAR(2)), 2) + ' AM'
+                WHEN DATEPART(HOUR, a.fecha_asistencia) < 12 THEN RIGHT('0' + CAST(DATEPART(HOUR, a.fecha_asistencia) AS VARCHAR(2)), 2) + ':' + RIGHT('0' + CAST(DATEPART(MINUTE, a.fecha_asistencia) AS VARCHAR(2)), 2) + ' AM'
+                WHEN DATEPART(HOUR, a.fecha_asistencia) = 12 THEN '12:' + RIGHT('0' + CAST(DATEPART(MINUTE, a.fecha_asistencia) AS VARCHAR(2)), 2) + ' PM'
+                ELSE RIGHT('0' + CAST(DATEPART(HOUR, a.fecha_asistencia) - 12 AS VARCHAR(2)), 2) + ':' + RIGHT('0' + CAST(DATEPART(MINUTE, a.fecha_asistencia) AS VARCHAR(2)), 2) + ' PM'
+            END
+        ELSE NULL 
+    END AS hora_asistencia,
+    
+    -- Rendimientos
+    a.rendimiento_aprendizaje,
+    a.rendimiento_dedicacion
+
+FROM tbAsistencias a
+    INNER JOIN tbTutorias t ON a.id_tutoria = t.id_tutoria
+    INNER JOIN tbMateriasCarrera mc ON t.id_materia_carrera = mc.id_materia_carrera
+    INNER JOIN tbMaterias m ON mc.id_materia = m.id_materia
+    INNER JOIN tbCarreras c ON mc.id_carrera = c.id_carrera
+    INNER JOIN tbHorarioDiaSemanas hds ON t.id_horario_dia_semana = hds.id_horario_dia_semana
+    INNER JOIN tbHorarios h ON hds.id_horario = h.id_horario
+    INNER JOIN tbDiaSemanas ds ON hds.id_dia = ds.id_dia_semana
+    INNER JOIN tbTiposTutoria tt ON t.id_tipo_tutoria = tt.id_tipo_tutoria
+    INNER JOIN tbUsuarios tutor ON t.id_tutor = tutor.id_usuario;
+GO
+
+CREATE OR ALTER VIEW vw_PanoramaTutoria AS
+SELECT 
+    -- Información básica de la tutoría
+    t.id_tutoria,
+    t.aula_tutoria,
+    t.activo,
+    
+    -- Información del tutor
+    tutor.id_usuario AS id_tutor,
+    CONCAT(tutor.nombre, ' ', tutor.apellido) AS nombre_tutor,
+    tutor.carnet AS carnet_tutor,
+    tutor.correo AS correo_tutor,
+    
+    -- Información académica
+    m.id_materia,
+    m.nombre_materia,
+    c.id_carrera,
+    c.nombre_carrera,
+    tc.id_tipo_carrera,
+    tc.tipo_carrera,
+    
+    -- Información del tipo de tutoría
+    tt.id_tipo_tutoria,
+    tt.tipo_tutoria,
+    
+    -- Información del horario
+    h.id_horario,
+    h.hora_inicio,
+    h.hora_final,
+    CONCAT(FORMAT(CAST(h.hora_inicio AS TIME), N'hh\:mm'), ' a ', FORMAT(CAST(h.hora_final AS TIME), N'hh\:mm')) AS horario_formateado,
+    
+    -- Información del día
+    ds.id_dia_semana,
+    ds.dia_semana,
+    
+    -- Información del horario-día
+    hds.id_horario_dia_semana,
+    hds.activo AS horario_activo,
+    hds.fecha_inicio_validez,
+    hds.fecha_fin_validez,
+    
+    -- Estadísticas de asistencia
+    (SELECT COUNT(*) FROM tbAsistencias WHERE id_tutoria = t.id_tutoria) AS total_asistencias,
+    (SELECT COUNT(DISTINCT id_usuario) FROM tbAsistencias WHERE id_tutoria = t.id_tutoria) AS estudiantes_unicos,
+    
+    -- Descripción completa para mostrar
+    CONCAT(
+        'Tutoría de ', m.nombre_materia, 
+        ' - Aula: ', t.aula_tutoria,
+        ' - Día: ', ds.dia_semana,
+        ' - Horario: ', FORMAT(CAST(h.hora_inicio AS TIME), N'hh\:mm'), ' a ', FORMAT(CAST(h.hora_final AS TIME), N'hh\:mm'),
+        ' - Tutor: ', tutor.nombre, ' ', tutor.apellido,
+        ' - Carrera: ', c.nombre_carrera
+    ) AS descripcion_completa,
+
+    -- Información de contacto extendida
+    CONCAT(
+        'Para más información contactar al tutor: ',
+        tutor.nombre, ' ', tutor.apellido,
+        ' - Correo: ', tutor.correo,
+        ' - Carnet: ', tutor.carnet
+    ) AS informacion_contacto
+
+FROM tbTutorias t
+    INNER JOIN tbUsuarios tutor ON t.id_tutor = tutor.id_usuario
+    INNER JOIN tbMateriasCarrera mc ON t.id_materia_carrera = mc.id_materia_carrera
+    INNER JOIN tbMaterias m ON mc.id_materia = m.id_materia
+    INNER JOIN tbCarreras c ON mc.id_carrera = c.id_carrera
+    INNER JOIN tbTiposCarrera tc ON c.id_tipo_carrera = tc.id_tipo_carrera
+    INNER JOIN tbHorarioDiaSemanas hds ON t.id_horario_dia_semana = hds.id_horario_dia_semana
+    INNER JOIN tbHorarios h ON hds.id_horario = h.id_horario
+    INNER JOIN tbDiaSemanas ds ON hds.id_dia = ds.id_dia_semana
+    INNER JOIN tbTiposTutoria tt ON t.id_tipo_tutoria = tt.id_tipo_tutoria;
 GO

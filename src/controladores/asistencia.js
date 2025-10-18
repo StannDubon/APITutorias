@@ -1,6 +1,7 @@
-import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato, ejecutarProcedimiento} from "../utilidades/querys.js"
+import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato, ejecutarProcedimiento, ejecutarVista} from "../utilidades/querys.js"
 import { catchAsync, AppError } from "../middlewares/errorHandler.js"
 const tabla = "tbAsistencias";
+const vista1 = "vw_AsistenciasSimplificadas"
 const procedimiento = "procd_CrearAsistencia"
 
 export const getAsistencia = catchAsync(async (req, res) => {
@@ -24,6 +25,19 @@ export const getAsistenciaById = catchAsync(async (req, res) => {
     } catch (error) {
         console.log(error)
         throw new AppError("Error al obtener la asistencia", 500)
+    }
+});
+
+export const getAsistenciasByTutoria = catchAsync(async (req,res) => {
+    try {
+        const {id} = req.params
+        const result = await ejecutarVista(vista1, {
+            id_tutoria: parseInt(id)
+        })
+        res.json(result)
+    } catch (error) {
+        console.log(error)
+        throw new AppError("Error al obtener la carrera", 500)
     }
 });
 
