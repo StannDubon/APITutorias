@@ -1,5 +1,6 @@
-import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato } from "../utilidades/querys.js"
+import { todosDatos, unSoloDato, updateDato, insertDato, deleteDato, ejecutarVista } from "../utilidades/querys.js"
 const tabla = "tbCarreras";
+const vista1 = "vw_MateriasConIndicadorCarrera";
 import { catchAsync, AppError } from "../middlewares/errorHandler.js";
 
 
@@ -21,6 +22,21 @@ export const getCarrerasById = catchAsync(async (req,res) => {
             throw new AppError("Carrera no encontrada", 404);
         }
         res.json(result[0])
+    } catch (error) {
+        console.log(error)
+        throw new AppError("Error al obtener la carrera", 500)
+    }
+});
+
+export const getMateriasByCarrera = catchAsync(async (req,res) => {
+    try {
+        const {id} = req.params
+        const result = await ejecutarVista(vista1, {
+            id_carrera: parseInt(id),
+            order_by_pertenece_a_carrera: 'DESC',
+            order_by_nombre_materia: 'ASC'
+        })
+        res.json(result)
     } catch (error) {
         console.log(error)
         throw new AppError("Error al obtener la carrera", 500)

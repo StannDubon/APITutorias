@@ -1,5 +1,5 @@
 import { Router } from "express";
-import {getCarreras, getCarrerasById, addCarrera, updateCarrera, deleteCarrera} from "../controladores/carreras.js"
+import {getCarreras, getCarrerasById, addCarrera, updateCarrera, deleteCarrera, getMateriasByCarrera} from "../controladores/carreras.js"
 import { validate } from "../middlewares/validacion.js";
 import { Carrera } from "../middlewares/scheme/carreraScheme.js";
 import {verificarToken, verificarNivel} from "../middlewares/authMiddleware.js"
@@ -14,5 +14,8 @@ router.post("/addCarrera", verificarToken, verificarNivel(['admin']), validate(C
 router.put("/actuCarrera/:id", verificarToken, verificarNivel(['admin']), validate(Carrera), updateCarrera)
 
 router.delete("/deleteCarrera/:id", verificarToken, verificarNivel(['admin']), deleteCarrera)
+
+
+router.get("/getMateriasByCarrera/:id", verificarToken, verificarNivel(['admin', 'profesor']), getMateriasByCarrera)
 
 export default router;

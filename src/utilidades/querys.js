@@ -17,7 +17,8 @@ const tablasPermitidas = [
     "tbRefreshTokens",
     "vw_MateriasConCarrera",
     "vw_UsuariosBasicos",
-    "vw_HorariosCompletos"
+    "vw_HorariosCompletos",
+    "vw_MateriasConIndicadorCarrera"
 ]
 
 const procedimientos = [
@@ -147,6 +148,50 @@ export const ejecutarProcedimiento = async (procedimiento, campos) => {
     })
 
     const result = await request.execute(procedimiento)
+    return result.recordset
+}
+
+export const ejecutarVista = async (vista, parametros = {}) => {
+    if (!tablasPermitidas.includes(vista)) {
+        throw new Error("Vista no permitida")
+    }
+    
+    const pool = await sql.connect(getConnection())
+    const request = pool.request()
+    
+    const keys = Object.keys(parametros)
+    if (keys.length === 0) {
+        const result = await request.query(`SELECT * FROM ${vista}`)
+        return result.recordset
+    }
+    let whereConditions = []
+    let orderByClause = ""
+    
+    keys.forEach(k => {
+        if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(k)) {
+            throw new Error(`Nombre de parámetro inválido: ${k}`)
+        }
+        
+        if (k.startsWith('order_by_')) {
+            const campoOrden = k.replace('order_by_', '')
+            const direccion = parametros[k] === 'DESC' ? 'DESC' : 'ASC'
+            orderByClause = `ORDER BY ${campoOrden} ${direccion}`
+        } else {
+            request.input(k, typeof parametros[k] === "number" ? sql.Int : sql.NVarChar, parametros[k])
+            whereConditions.push(`${k} = @${k}`)
+        }
+    })
+    let query = `SELECT * FROM ${vista}`
+    
+    if (whereConditions.length > 0) {
+        query += ` WHERE ${whereConditions.join(' AND ')}`
+    }
+    
+    if (orderByClause) {
+        query += ` ${orderByClause}`
+    }
+    
+    const result = await request.query(query)
     return result.recordset
 }
 
